@@ -27,8 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = await authService.getCurrentUser();
           setUser(userData);
         }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+        } else {
+          console.error('Auth initialization error:', err);
+        }
       } finally {
         setLoading(false);
       }
@@ -67,8 +71,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       navigate('/login');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Çıkış yapılırken bir hata oluştu');
-      throw err;
+      localStorage.removeItem('token');
+      setUser(null);
+      navigate('/login');
+      console.error('Logout error:', err);
     }
   };
 

@@ -16,13 +16,13 @@ from .serializers import (
     ResetPasswordConfirmSerializer
 )
 from .models import User
-from ratelimit.decorators import ratelimit
+# from ratelimit.decorators import ratelimit  # Geçici olarak kapatıldı
 
 class RegisterAPI(generics.GenericAPIView):
     serializer_class = RegisterSerializer
     permission_classes = (permissions.AllowAny,)
 
-    @ratelimit(key='ip', rate='5/m', block=True)
+    # @ratelimit(key='ip', rate='5/m', block=True)  # Geçici olarak kapatıldı
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -57,7 +57,7 @@ class LoginAPI(APIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = LoginSerializer
 
-    @ratelimit(key='ip', rate='5/m', block=True)
+    # @ratelimit(key='ip', rate='5/m', block=True)  # Geçici olarak kapatıldı
     def post(self, request, format=None):
         try:
             serializer = self.serializer_class(data=request.data)

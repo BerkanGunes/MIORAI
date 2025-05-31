@@ -20,6 +20,18 @@ authApi.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor - 401 hatalarını ele al
+authApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token geçersiz, localStorage'dan temizle
+      localStorage.removeItem('token');
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface LoginData {
   email: string;
   password: string;
@@ -81,8 +93,14 @@ export const authService = {
   },
 
   async logout() {
-    await authApi.post('/logout/');
-    localStorage.removeItem('token');
+    try {
+      await authApi.post('/logout/');
+    } catch (error) {
+      // Logout hatası olsa bile token'ı temizle
+      console.warn('Logout request failed, but clearing token anyway');
+    } finally {
+      localStorage.removeItem('token');
+    }
   },
 
   async getCurrentUser() {
@@ -114,9 +132,9 @@ export const authService = {
     if (!token) return false;
 
     try {
-      const decoded = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      return decoded.exp ? decoded.exp > currentTime : false;
+      // Knox token'ları JWT değil, basit string token'lar
+      // Bu yüzden sadece token varlığını kontrol edelim
+      return token.length > 0;
     } catch {
       return false;
     }

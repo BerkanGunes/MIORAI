@@ -1,7 +1,33 @@
 {
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
-    "@mui/material": "^7.1.0"
+  "name": "miorai-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MIORAI monorepo with frontend, backend and tournament modules",
+  "workspaces": [
+    "miorai_frontend",
+    "miorai_backend", 
+    "tournament"
+  ],
+  "scripts": {
+    "start:frontend": "npm run start --workspace=miorai_frontend",
+    "start:tournament": "npm run start --workspace=tournament",
+    "start:backend": "npm run start --workspace=miorai_backend",
+    "build:frontend": "npm run build --workspace=miorai_frontend",
+    "build:tournament": "npm run build --workspace=tournament",
+    "build:backend": "npm run build --workspace=miorai_backend",
+    "build:all": "npm run build --workspaces --if-present",
+    "install:all": "npm install",
+    "clean": "rm -rf node_modules */node_modules */package-lock.json",
+    "dev:frontend": "npm run start --workspace=miorai_frontend",
+    "dev:tournament": "npm run start --workspace=tournament",
+    "dev:all": "concurrently \"npm run dev:frontend\" \"npm run dev:tournament\"",
+    "test:all": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
-}
+} 

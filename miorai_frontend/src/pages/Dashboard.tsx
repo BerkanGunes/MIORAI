@@ -5,11 +5,17 @@ import {
   Typography,
   Paper,
   Button,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
@@ -37,19 +43,57 @@ const Dashboard: React.FC = () => {
           </Typography>
         </Paper>
 
+        {/* Özellikler Grid */}
+        <Grid container spacing={3} sx={{ mb: 3, justifyContent: 'center' }}>
+          <Grid item xs={12} md={8} lg={6}>
+            <Card sx={{ textAlign: 'center' }}>
+              <CardContent>
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  🏆 Resim Turnuvası
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                  Resimlerinizi yükleyin ve hangisinin en iyisi olduğunu keşfedin!
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Puan ve tur sistemli akıllı algoritma ile resimlerinizi karşılaştırın.
+                </Typography>
+              </CardContent>
+              <CardActions sx={{ justifyContent: 'center', pb: 3 }}>
+                <Button 
+                  variant="contained"
+                  size="large" 
+                  color="primary"
+                  onClick={() => navigate('/tournament')}
+                  sx={{ 
+                    px: 4, 
+                    py: 1.5, 
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  🚀 Turnuvaya Başla
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        </Grid>
+
         {/* Basit Bilgilendirme Kartı */}
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Nasıl Başlarım?
+            🎯 Turnuva Nasıl Çalışır?
           </Typography>
           <Typography variant="body1" paragraph>
-            1. Sol menüden "Dosya Yükle" seçeneğine tıklayın
+            1. "Turnuvaya Başla" butonuna tıklayın
           </Typography>
           <Typography variant="body1" paragraph>
-            2. Karşılaştırmak istediğiniz dosyaları seçin
+            2. Resimlerinizi yükleyin (JPG, PNG - max 16MB)
           </Typography>
           <Typography variant="body1" paragraph>
-            3. Karşılaştırma sonuçlarını görüntüleyin
+            3. Turnuvayı başlatın ve maçlarda tercih ettiğiniz resmi seçin
+          </Typography>
+          <Typography variant="body1" paragraph>
+            4. Akıllı algoritma ile kazananları görün! 🏆
           </Typography>
         </Paper>
 

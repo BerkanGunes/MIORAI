@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
+import TournamentPage from './pages/TournamentPage';
 
 // Theme
 const theme = createTheme({
@@ -52,6 +53,15 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/tournament"
+            element={
+              <ProtectedRoute>
+                <TournamentPage />
               </ProtectedRoute>
             }
           />
