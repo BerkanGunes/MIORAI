@@ -5,7 +5,7 @@
   "description": "MIORAI monorepo with frontend, backend and tournament modules",
   "workspaces": [
     "miorai_frontend",
-    "miorai_backend", 
+    "miorai_backend",
     "tournament"
   ],
   "scripts": {
@@ -29,5 +29,11 @@
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^7.1.1",
+    "@mui/system": "^7.1.1"
   }
-} 
+}
