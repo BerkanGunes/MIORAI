@@ -39,22 +39,22 @@
 ### Backend Hedefleri
 
 - [ ] Dosya İşleme API'leri
-  - `file_processor.py`: Dosya yükleme ve işleme
+  - ImageUploadView (tournaments/views.py içinde): Dosya yükleme ve işleme
   - Geçici dosya depolama sistemi
   - Dosya güvenlik kontrolleri
 - [ ] Karşılaştırma Altyapısı
-  - `compare.py`: Temel karşılaştırma mantığı
+  - Karşılaştırma mantığı Match modeli ve turnuva sistemi içinde: Temel karşılaştırma mantığı
   - Dosya işleme kuyruğu
   - Hata yönetimi
 
 ### Frontend Hedefleri
 
 - [ ] Dosya Yönetimi
-  - `FileUploader.jsx`: Dosya yükleme bileşeni
+  - `ImageUpload.tsx`: Dosya yükleme bileşeni
   - Dosya seçim arayüzü
   - Yükleme durumu göstergeleri
 - [ ] Karşılaştırma Arayüzü
-  - `DiffViewer.jsx`: Karşılaştırma görüntüleme
+  - `ImageMatchCard.tsx`: Karşılaştırma görüntüleme
   - Basit sonuç ekranı
   - Responsive tasarım
 

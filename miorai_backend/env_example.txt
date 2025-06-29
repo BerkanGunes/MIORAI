@@ -1,0 +1,15 @@
+# Django Settings
+DJANGO_SECRET_KEY=your-secret-key-here
+DJANGO_DEBUG=True
+
+# Database Settings
+DB_NAME=miorai_db
+DB_USER=root
+DB_PASSWORD=your-database-password
+DB_HOST=localhost
+DB_PORT=3306
+
+# Email Settings (Mailgun)
+EMAIL_HOST_USER=your-mailgun-username
+EMAIL_HOST_PASSWORD=your-mailgun-password
+DEFAULT_FROM_EMAIL=noreply@miorai.com 
