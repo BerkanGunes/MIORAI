@@ -78,6 +78,33 @@ export const tournamentService = {
       return null;
     }
   },
+
+  // Public turnuvaları listele
+  async getPublicTournaments(): Promise<any[]> {
+    const response = await tournamentApi.get('/public/');
+    return response.data;
+  },
+
+  // Tournament'ı public yap
+  async makeTournamentPublic(name: string): Promise<void> {
+    await tournamentApi.post('/make-public/', { name });
+  },
+
+  // Public tournament'tan yeni tournament oluştur
+  async createFromPublicTournament(tournamentId: number): Promise<Tournament> {
+    const response = await tournamentApi.post(`/create-from-public/${tournamentId}/`);
+    return response.data;
+  },
+
+  // Tournament'ı sil
+  async deleteTournament(): Promise<void> {
+    await tournamentApi.delete('/delete/');
+  },
+
+  // Aktif turnuvanın adını güncelle
+  async updateTournamentName(name: string): Promise<void> {
+    await tournamentApi.patch('/detail/', { name });
+  },
 };
 
 export default tournamentService; 

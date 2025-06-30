@@ -9,6 +9,7 @@ import {
   Link,
   Paper,
   Alert,
+  useTheme,
 } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,6 +18,7 @@ import { validateRegisterForm, ValidationErrors } from '../utils/validation';
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const { register, error: authError, clearError } = useAuth();
+  const theme = useTheme();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -67,13 +69,20 @@ const Register: React.FC = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Container 
+      component="main" 
+      maxWidth="xs"
+      sx={{ 
+        fontFamily: 'Poppins, sans-serif',
+        py: 8,
+      }}
+    >
       <Box
         sx={{
-          marginTop: 8,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          width: '100%',
         }}
       >
         <Paper
@@ -84,14 +93,42 @@ const Register: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             width: '100%',
+            background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+            border: `2px solid ${theme.palette.primary.main}`,
+            boxShadow: `0 0 20px ${theme.palette.primary.main}, inset 0 0 20px ${theme.palette.primary.main}1A`,
+            fontFamily: 'Poppins, sans-serif',
           }}
         >
-          <Typography component="h1" variant="h5">
+          <Typography 
+            component="h1" 
+            variant="h5"
+            sx={{ 
+              color: theme.palette.primary.main,
+              fontFamily: 'Poppins, sans-serif',
+              textShadow: `0 0 10px ${theme.palette.primary.main}`,
+              fontWeight: 'bold',
+              background: `linear-gradient(45deg, ${theme.palette.primary.main}, #fff)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
             Kayıt Ol
           </Typography>
 
           {authError && (
-            <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                width: '100%', 
+                mt: 2,
+                background: `${theme.palette.background.default}E6`,
+                border: '1px solid #ff4444',
+                boxShadow: '0 0 10px #ff4444',
+                color: '#ff4444',
+                fontFamily: 'Poppins, sans-serif',
+              }}
+            >
               {authError}
             </Alert>
           )}
@@ -110,6 +147,44 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                   error={!!errors.firstName}
                   helperText={errors.firstName}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      '& fieldset': {
+                        borderColor: theme.palette.primary.main,
+                        boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-error fieldset': {
+                        borderColor: '#ff4444',
+                        boxShadow: '0 0 5px #ff4444',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                      '&.Mui-focused': {
+                        color: '#fff',
+                      },
+                      '&.Mui-error': {
+                        color: '#ff4444',
+                      },
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#ff4444',
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: '0 0 2px #ff4444',
+                    },
+                  }}
                 />
               </Grid>
               <Grid xs={12} sm={6}>
@@ -124,6 +199,44 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                   error={!!errors.lastName}
                   helperText={errors.lastName}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      '& fieldset': {
+                        borderColor: theme.palette.primary.main,
+                        boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-error fieldset': {
+                        borderColor: '#ff4444',
+                        boxShadow: '0 0 5px #ff4444',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                      '&.Mui-focused': {
+                        color: '#fff',
+                      },
+                      '&.Mui-error': {
+                        color: '#ff4444',
+                      },
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#ff4444',
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: '0 0 2px #ff4444',
+                    },
+                  }}
                 />
               </Grid>
               <Grid xs={12}>
@@ -138,6 +251,44 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                   error={!!errors.email}
                   helperText={errors.email}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      '& fieldset': {
+                        borderColor: theme.palette.primary.main,
+                        boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-error fieldset': {
+                        borderColor: '#ff4444',
+                        boxShadow: '0 0 5px #ff4444',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                      '&.Mui-focused': {
+                        color: '#fff',
+                      },
+                      '&.Mui-error': {
+                        color: '#ff4444',
+                      },
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#ff4444',
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: '0 0 2px #ff4444',
+                    },
+                  }}
                 />
               </Grid>
               <Grid xs={12}>
@@ -153,6 +304,44 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                   error={!!errors.password}
                   helperText={errors.password}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      '& fieldset': {
+                        borderColor: theme.palette.primary.main,
+                        boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-error fieldset': {
+                        borderColor: '#ff4444',
+                        boxShadow: '0 0 5px #ff4444',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                      '&.Mui-focused': {
+                        color: '#fff',
+                      },
+                      '&.Mui-error': {
+                        color: '#ff4444',
+                      },
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#ff4444',
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: '0 0 2px #ff4444',
+                    },
+                  }}
                 />
               </Grid>
               <Grid xs={12}>
@@ -168,20 +357,91 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      '& fieldset': {
+                        borderColor: theme.palette.primary.main,
+                        boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#fff',
+                        boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      },
+                      '&.Mui-error fieldset': {
+                        borderColor: '#ff4444',
+                        boxShadow: '0 0 5px #ff4444',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                      '&.Mui-focused': {
+                        color: '#fff',
+                      },
+                      '&.Mui-error': {
+                        color: '#ff4444',
+                      },
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#ff4444',
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: '0 0 2px #ff4444',
+                    },
+                  }}
                 />
               </Grid>
             </Grid>
             <Button
               type="submit"
               fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              variant="outlined"
+              sx={{ 
+                mt: 3, 
+                mb: 2,
+                color: theme.palette.primary.main,
+                border: `2px solid ${theme.palette.primary.main}`,
+                boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                background: `${theme.palette.primary.main}1A`,
+                fontFamily: 'Poppins, sans-serif',
+                fontWeight: 'bold',
+                '&:hover': {
+                  background: `${theme.palette.primary.main}33`,
+                  boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                  border: '2px solid #fff',
+                },
+                '&:disabled': {
+                  color: `${theme.palette.primary.main}80`,
+                  border: `2px solid ${theme.palette.primary.main}80`,
+                  boxShadow: 'none',
+                },
+              }}
               disabled={loading}
             >
               {loading ? 'Kayıt Yapılıyor...' : 'Kayıt Ol'}
             </Button>
             <Box sx={{ textAlign: 'center' }}>
-              <Link component={RouterLink} to="/login" variant="body2">
+              <Link 
+                component={RouterLink} 
+                to="/login" 
+                variant="body2"
+                sx={{ 
+                  color: theme.palette.primary.main,
+                  fontFamily: 'Poppins, sans-serif',
+                  textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                  textDecoration: 'none',
+                  '&:hover': {
+                    color: '#fff',
+                    textShadow: `0 0 5px ${theme.palette.primary.main}`,
+                  },
+                }}
+              >
                 Zaten hesabınız var mı? Giriş yapın
               </Link>
             </Box>

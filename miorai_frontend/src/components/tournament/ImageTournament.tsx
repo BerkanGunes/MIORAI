@@ -15,6 +15,12 @@ import {
   CardContent,
   Chip,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  useTheme,
 } from '@mui/material';
 import {
   PhotoCamera,
@@ -28,11 +34,17 @@ import ImageUpload from './ImageUpload';
 import ImageMatchCard from './ImageMatchCard';
 
 const ImageTournament: React.FC = () => {
+  const theme = useTheme();
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingResult, setSubmittingResult] = useState(false);
+  
+  // Public modal states
+  const [showPublicModal, setShowPublicModal] = useState(false);
+  const [tournamentName, setTournamentName] = useState('');
+  const [makingPublic, setMakingPublic] = useState(false);
 
   // Tournament state
   const [step, setStep] = useState(0); // 0: Setup, 1: Playing, 2: Completed
@@ -53,12 +65,14 @@ const ImageTournament: React.FC = () => {
         
         if (existingTournament.is_completed) {
           setStep(2);
-        } else if (existingTournament.matches.length > 0) {
+        } else if (existingTournament.matches && existingTournament.matches.length > 0) {
+          // Turnuva başlamış, oyun adımına geç
           setStep(1);
           // Mevcut maçı getir
           const match = await tournamentService.getCurrentMatch();
           setCurrentMatch(match);
         } else {
+          // Turnuva henüz başlamamış, resim yükleme adımında
           setStep(0);
         }
       } catch (error) {
@@ -136,6 +150,9 @@ const ImageTournament: React.FC = () => {
       if (updatedTournament.is_completed) {
         setStep(2);
         setCurrentMatch(null);
+        // Tournament tamamlandı, public yapma modal'ını göster
+        setTournamentName(updatedTournament.name);
+        setShowPublicModal(true);
       } else {
         // Sonraki maçı getir
         const nextMatch = await tournamentService.getCurrentMatch();
@@ -145,6 +162,42 @@ const ImageTournament: React.FC = () => {
       setError(err.response?.data?.error || 'Maç sonucu gönderilemedi.');
     } finally {
       setSubmittingResult(false);
+    }
+  };
+
+  const handleMakePublic = async () => {
+    try {
+      setMakingPublic(true);
+      setError(null);
+      
+      await tournamentService.makeTournamentPublic(tournamentName);
+      setShowPublicModal(false);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Turnuva public yapılırken hata oluştu.');
+    } finally {
+      setMakingPublic(false);
+    }
+  };
+
+  const handleDeleteTournament = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await tournamentService.deleteTournament();
+      setShowPublicModal(false);
+      
+      // Yeni tournament oluştur
+      const newTournament = await tournamentService.createTournament({
+        name: 'Resim Turnuvası',
+      });
+      setTournament(newTournament);
+      setCurrentMatch(null);
+      setStep(0);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'İşlem gerçekleştirilemedi.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,13 +225,19 @@ const ImageTournament: React.FC = () => {
   if (loading && !tournament) {
     return (
       <Container maxWidth="md" sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress size={60} />
+        <CircularProgress 
+          size={60} 
+          sx={{ 
+            color: theme.palette.primary.main,
+            filter: `drop-shadow(0 0 10px ${theme.palette.primary.main})`,
+          }}
+        />
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4, fontFamily: 'Poppins, sans-serif' }}>
       {/* Header */}
       <Paper 
         elevation={4} 
@@ -186,24 +245,73 @@ const ImageTournament: React.FC = () => {
           p: 4, 
           mb: 4, 
           textAlign: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
+          background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+          color: theme.palette.primary.main,
+          border: `2px solid ${theme.palette.primary.main}`,
+          boxShadow: `0 0 20px ${theme.palette.primary.main}, inset 0 0 20px ${theme.palette.primary.main}1A`,
+          fontFamily: 'Poppins, sans-serif',
         }}
       >
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography 
+          variant="h3" 
+          gutterBottom 
+          sx={{ 
+            fontWeight: 'bold',
+            fontFamily: 'Poppins, sans-serif',
+            textShadow: `0 0 10px ${theme.palette.primary.main}`,
+            background: `linear-gradient(45deg, ${theme.palette.primary.main}, #fff)`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
           🏆 RESİM TURNUVASI
         </Typography>
-        <Typography variant="h6" sx={{ opacity: 0.9 }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            opacity: 0.9,
+            fontFamily: 'Poppins, sans-serif',
+            color: theme.palette.primary.main,
+            textShadow: `0 0 5px ${theme.palette.primary.main}`,
+          }}
+        >
           Resimlerinizi yükleyin ve hangisinin en iyisi olduğunu belirleyin!
         </Typography>
       </Paper>
 
       {/* Stepper */}
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: 3, 
+          mb: 4,
+          background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+          border: `1px solid ${theme.palette.primary.main}`,
+          boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+          fontFamily: 'Poppins, sans-serif',
+        }}
+      >
         <Stepper activeStep={step} alternativeLabel>
           {steps.map((label, index) => (
             <Step key={label}>
-              <StepLabel>{label}</StepLabel>
+              <StepLabel 
+                sx={{ 
+                  '& .MuiStepLabel-label': {
+                    color: theme.palette.primary.main,
+                    fontFamily: 'Poppins, sans-serif',
+                    textShadow: `0 0 5px ${theme.palette.primary.main}`,
+                  },
+                  '& .MuiStepLabel-iconContainer': {
+                    '& .MuiStepIcon-root': {
+                      color: index <= step ? theme.palette.primary.main : `${theme.palette.primary.main}4D`,
+                      filter: index <= step ? `drop-shadow(0 0 5px ${theme.palette.primary.main})` : 'none',
+                    },
+                  },
+                }}
+              >
+                {label}
+              </StepLabel>
             </Step>
           ))}
         </Stepper>
@@ -211,7 +319,18 @@ const ImageTournament: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 3,
+            background: `${theme.palette.background.default}E6`,
+            border: '1px solid #ff4444',
+            boxShadow: '0 0 10px #ff4444',
+            color: '#ff4444',
+            fontFamily: 'Poppins, sans-serif',
+          }} 
+          onClose={() => setError(null)}
+        >
           {error}
         </Alert>
       )}
@@ -219,6 +338,31 @@ const ImageTournament: React.FC = () => {
       {/* Step 0: Image Upload */}
       {step === 0 && tournament && (
         <Box>
+          {/* Turnuva adı düzenleme alanı */}
+          <Box sx={{ mb: 3, textAlign: 'center' }}>
+            <TextField
+              label="Turnuva Adı"
+              value={tournament.name}
+              onChange={async (e) => {
+                const newName = e.target.value;
+                setTournament((prev) => prev ? { ...prev, name: newName } : prev);
+                // Backend'e güncelle
+                try {
+                  await tournamentService.updateTournamentName(newName);
+                } catch {}
+              }}
+              variant="outlined"
+              sx={{
+                input: { color: theme.palette.primary.main, fontFamily: 'Poppins, sans-serif' },
+                label: { color: theme.palette.primary.main, fontFamily: 'Poppins, sans-serif' },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: theme.palette.primary.main },
+                  '&:hover fieldset': { borderColor: '#fff' },
+                  '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
+                },
+              }}
+            />
+          </Box>
           <ImageUpload
             images={tournament.images || []}
             onUpload={handleImageUpload}
@@ -230,9 +374,9 @@ const ImageTournament: React.FC = () => {
           {/* Start Tournament Button */}
           <Box sx={{ textAlign: 'center', mt: 4 }}>
             <Button
-              variant="contained"
+              variant="outlined"
               size="large"
-              startIcon={<PlayArrow />}
+              startIcon={<PlayArrow sx={{ color: theme.palette.primary.main }} />}
               onClick={handleStartTournament}
               disabled={loading || !tournament.images || (tournament.images.length < 2)}
               sx={{ 
@@ -240,11 +384,34 @@ const ImageTournament: React.FC = () => {
                 py: 2, 
                 fontSize: '1.2rem',
                 fontWeight: 'bold',
+                fontFamily: 'Poppins, sans-serif',
+                color: theme.palette.primary.main,
+                border: `2px solid ${theme.palette.primary.main}`,
+                boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                background: `${theme.palette.primary.main}1A`,
+                '&:hover': {
+                  background: `${theme.palette.primary.main}33`,
+                  boxShadow: `0 0 25px ${theme.palette.primary.main}`,
+                  border: '2px solid #fff',
+                },
+                '&:disabled': {
+                  color: `${theme.palette.primary.main}80`,
+                  border: `2px solid ${theme.palette.primary.main}80`,
+                  boxShadow: 'none',
+                },
               }}
             >
               TURNUVAYI BAŞLAT
             </Button>
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mt: 1, 
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                textShadow: `0 0 3px ${theme.palette.primary.main}`,
+              }}
+            >
               {!tournament.images || tournament.images.length < 2 
                 ? `En az 2 resim gerekli (${tournament.images?.length || 0}/2)` 
                 : `${tournament.images.length} resim hazır!`
@@ -258,18 +425,51 @@ const ImageTournament: React.FC = () => {
       {step === 1 && tournament && (
         <Box>
           {/* Tournament Info */}
-          <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+          <Paper 
+            elevation={2} 
+            sx={{ 
+              p: 3, 
+              mb: 4,
+              background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+              border: `1px solid ${theme.palette.primary.main}`,
+              boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+              fontFamily: 'Poppins, sans-serif',
+            }}
+          >
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={3}>
-                <Typography variant="h6">Round {tournament.current_round}</Typography>
+                <Typography 
+                  variant="h6"
+                  sx={{ 
+                    color: theme.palette.primary.main,
+                    fontFamily: 'Poppins, sans-serif',
+                    textShadow: `0 0 5px ${theme.palette.primary.main}`,
+                  }}
+                >
+                  Round {tournament.current_round}
+                </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="body1">
+                <Typography 
+                  variant="body1"
+                  sx={{ 
+                    color: theme.palette.primary.main,
+                    fontFamily: 'Poppins, sans-serif',
+                    textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                  }}
+                >
                   Toplam Resim: {tournament.images?.filter(img => !img.name.startsWith('BOŞ_')).length || 0}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={3}>
-                <Typography variant="body1">
+                <Typography 
+                  variant="body1"
+                  sx={{ 
+                    color: theme.palette.primary.main,
+                    fontFamily: 'Poppins, sans-serif',
+                    textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                  }}
+                >
                   Oynanan Maç: {tournament.matches?.filter(m => m.winner).length || 0}
                 </Typography>
               </Grid>
@@ -284,9 +484,33 @@ const ImageTournament: React.FC = () => {
               loading={submittingResult}
             />
           ) : (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <CircularProgress sx={{ mb: 2 }} />
-              <Typography>Sonraki maç hazırlanıyor...</Typography>
+            <Paper 
+              sx={{ 
+                p: 4, 
+                textAlign: 'center',
+                background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+                border: `1px solid ${theme.palette.primary.main}`,
+                boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                fontFamily: 'Poppins, sans-serif',
+              }}
+            >
+              <CircularProgress 
+                sx={{ 
+                  mb: 2,
+                  color: theme.palette.primary.main,
+                  filter: `drop-shadow(0 0 10px ${theme.palette.primary.main})`,
+                }} 
+              />
+              <Typography 
+                variant="h6"
+                sx={{ 
+                  color: theme.palette.primary.main,
+                  fontFamily: 'Poppins, sans-serif',
+                  textShadow: `0 0 5px ${theme.palette.primary.main}`,
+                }}
+              >
+                Sonraki maç hazırlanıyor...
+              </Typography>
             </Paper>
           )}
         </Box>
@@ -301,21 +525,54 @@ const ImageTournament: React.FC = () => {
               p: 4, 
               textAlign: 'center', 
               mb: 4,
-              background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
-              color: 'white',
+              background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+              color: theme.palette.primary.main,
+              border: `2px solid ${theme.palette.primary.main}`,
+              boxShadow: `0 0 20px ${theme.palette.primary.main}, inset 0 0 20px ${theme.palette.primary.main}1A`,
+              fontFamily: 'Poppins, sans-serif',
             }}
           >
-            <EmojiEvents sx={{ fontSize: 80, mb: 2 }} />
-            <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+            <EmojiEvents sx={{ fontSize: 80, mb: 2, color: theme.palette.primary.main, filter: `drop-shadow(0 0 15px ${theme.palette.primary.main})` }} />
+            <Typography 
+              variant="h3" 
+              gutterBottom 
+              sx={{ 
+                fontWeight: 'bold',
+                fontFamily: 'Poppins, sans-serif',
+                textShadow: `0 0 10px ${theme.palette.primary.main}`,
+                background: `linear-gradient(45deg, ${theme.palette.primary.main}, #fff)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
               🎉 TURNUVA TAMAMLANDI!
             </Typography>
-            <Typography variant="h6">
+            <Typography 
+              variant="h6"
+              sx={{ 
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                textShadow: `0 0 5px ${theme.palette.primary.main}`,
+              }}
+            >
               Kazananlar aşağıda sıralanmıştır
             </Typography>
           </Paper>
 
           {/* Results */}
-          <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography 
+            variant="h4" 
+            gutterBottom 
+            sx={{ 
+              textAlign: 'center', 
+              mb: 4,
+              color: theme.palette.primary.main,
+              fontFamily: 'Poppins, sans-serif',
+              textShadow: `0 0 10px ${theme.palette.primary.main}`,
+              fontWeight: 'bold',
+            }}
+          >
             🏆 SONUÇLAR
           </Typography>
 
@@ -331,15 +588,21 @@ const ImageTournament: React.FC = () => {
                   <Card 
                     sx={{ 
                       position: 'relative',
+                      background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+                      border: `2px solid ${theme.palette.primary.main}`,
+                      boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      fontFamily: 'Poppins, sans-serif',
                       ...(index === 0 && {
-                        border: '3px solid gold',
-                        boxShadow: '0 8px 25px rgba(255,215,0,0.4)',
+                        border: '3px solid #0ef',
+                        boxShadow: '0 0 25px #0ef, 0 0 35px rgba(14, 255, 255, 0.3)',
                       }),
                       ...(index === 1 && {
-                        border: '3px solid silver',
+                        border: '3px solid rgba(14, 255, 255, 0.7)',
+                        boxShadow: '0 0 20px rgba(14, 255, 255, 0.7)',
                       }),
                       ...(index === 2 && {
-                        border: '3px solid #CD7F32',
+                        border: '3px solid rgba(14, 255, 255, 0.5)',
+                        boxShadow: '0 0 15px rgba(14, 255, 255, 0.5)',
                       }),
                     }}
                   >
@@ -353,13 +616,15 @@ const ImageTournament: React.FC = () => {
                         width: 50,
                         height: 50,
                         borderRadius: '50%',
-                        bgcolor: index === 0 ? 'gold' : index === 1 ? 'silver' : '#CD7F32',
+                        bgcolor: index === 0 ? '#0ef' : index === 1 ? 'rgba(14, 255, 255, 0.7)' : 'rgba(14, 255, 255, 0.5)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'white',
+                        color: '#1f293a',
                         fontWeight: 'bold',
                         fontSize: '1.2rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        boxShadow: '0 0 10px #0ef',
                       }}
                     >
                       {index + 1}
@@ -385,20 +650,40 @@ const ImageTournament: React.FC = () => {
                         }}
                       />
                     </Box>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
+                    <CardContent sx={{ background: 'rgba(31, 41, 58, 0.8)' }}>
+                      <Typography 
+                        variant="h6" 
+                        gutterBottom
+                        sx={{ 
+                          color: theme.palette.primary.main,
+                          fontFamily: 'Poppins, sans-serif',
+                          textShadow: `0 0 5px ${theme.palette.primary.main}`,
+                        }}
+                      >
                         {image.name}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                         <Chip
                           label={`Puan: ${image.points}`}
                           color={image.points > 0 ? 'success' : 'error'}
-                          variant="filled"
+                          variant="outlined"
+                          sx={{ 
+                            color: '#0ef',
+                            borderColor: '#0ef',
+                            fontFamily: 'Poppins, sans-serif',
+                            boxShadow: '0 0 5px #0ef',
+                          }}
                         />
                         <Chip
                           label={`Tur: ${image.rounds_played}`}
                           color="primary"
                           variant="outlined"
+                          sx={{ 
+                            color: '#0ef',
+                            borderColor: '#0ef',
+                            fontFamily: 'Poppins, sans-serif',
+                            boxShadow: '0 0 5px #0ef',
+                          }}
                         />
                       </Box>
                     </CardContent>
@@ -410,9 +695,9 @@ const ImageTournament: React.FC = () => {
           {/* Restart Button */}
           <Box sx={{ textAlign: 'center', mt: 4 }}>
             <Button
-              variant="contained"
+              variant="outlined"
               size="large"
-              startIcon={<RestartAlt />}
+              startIcon={<RestartAlt sx={{ color: '#0ef' }} />}
               onClick={handleRestart}
               disabled={loading}
               sx={{ 
@@ -420,6 +705,21 @@ const ImageTournament: React.FC = () => {
                 py: 2, 
                 fontSize: '1.1rem',
                 fontWeight: 'bold',
+                fontFamily: 'Poppins, sans-serif',
+                color: '#0ef',
+                border: '2px solid #0ef',
+                boxShadow: '0 0 15px #0ef',
+                background: 'rgba(14, 255, 255, 0.1)',
+                '&:hover': {
+                  background: 'rgba(14, 255, 255, 0.2)',
+                  boxShadow: '0 0 25px #0ef',
+                  border: '2px solid #fff',
+                },
+                '&:disabled': {
+                  color: 'rgba(14, 255, 255, 0.5)',
+                  border: '2px solid rgba(14, 255, 255, 0.5)',
+                  boxShadow: 'none',
+                },
               }}
             >
               YENİ TURNUVA BAŞLAT
@@ -427,6 +727,122 @@ const ImageTournament: React.FC = () => {
           </Box>
         </Box>
       )}
+
+      {/* Public Tournament Modal */}
+      <Dialog
+        open={showPublicModal}
+        onClose={() => !makingPublic && setShowPublicModal(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+            border: `2px solid ${theme.palette.primary.main}`,
+            boxShadow: `0 0 20px ${theme.palette.primary.main}`,
+            fontFamily: 'Poppins, sans-serif',
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: theme.palette.primary.main,
+            fontFamily: 'Poppins, sans-serif',
+            textShadow: `0 0 10px ${theme.palette.primary.main}`,
+            fontWeight: 'bold',
+            textAlign: 'center',
+          }}
+        >
+          🎉 Turnuva Tamamlandı!
+        </DialogTitle>
+        <DialogContent>
+          <Typography
+            variant="body1"
+            sx={{
+              color: theme.palette.primary.main,
+              fontFamily: 'Poppins, sans-serif',
+              textShadow: `0 0 3px ${theme.palette.primary.main}`,
+              mb: 3,
+              textAlign: 'center',
+            }}
+          >
+            Turnuvanızı diğer kullanıcıların oynayabilmesi için public yapmak ister misiniz?
+          </Typography>
+          <TextField
+            fullWidth
+            label="Turnuva İsmi"
+            value={tournamentName}
+            onChange={(e) => setTournamentName(e.target.value)}
+            variant="outlined"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                '& fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '&:hover fieldset': {
+                  borderColor: '#fff',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                '&.Mui-focused': {
+                  color: theme.palette.primary.main,
+                },
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 2 }}>
+          <Button
+            onClick={handleDeleteTournament}
+            disabled={makingPublic}
+            sx={{
+              color: '#ff4444',
+              border: '1px solid #ff4444',
+              fontFamily: 'Poppins, sans-serif',
+              '&:hover': {
+                background: 'rgba(255, 68, 68, 0.1)',
+                border: '1px solid #ff6666',
+              },
+            }}
+          >
+            Hayır, Sil
+          </Button>
+          <Button
+            onClick={handleMakePublic}
+            disabled={makingPublic || !tournamentName.trim()}
+            variant="outlined"
+            sx={{
+              color: '#0ef',
+              border: '2px solid #0ef',
+              boxShadow: '0 0 10px #0ef',
+              background: 'rgba(14, 255, 255, 0.1)',
+              fontFamily: 'Poppins, sans-serif',
+              '&:hover': {
+                background: 'rgba(14, 255, 255, 0.2)',
+                boxShadow: '0 0 15px #0ef',
+                border: '2px solid #fff',
+              },
+              '&:disabled': {
+                color: 'rgba(14, 255, 255, 0.5)',
+                border: '2px solid rgba(14, 255, 255, 0.5)',
+                boxShadow: 'none',
+              },
+            }}
+          >
+            {makingPublic ? (
+              <CircularProgress size={20} sx={{ color: '#0ef' }} />
+            ) : (
+              'Evet, Public Yap'
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

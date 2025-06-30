@@ -11,6 +11,8 @@ class Tournament(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
     is_completed = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=False)
+    play_count = models.IntegerField(default=0)
     current_round = models.IntegerField(default=1)
     current_match_index = models.IntegerField(default=0)
     win_matrix = models.TextField(default='[]')  # JSON string olarak saklayacağız

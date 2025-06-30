@@ -31,6 +31,24 @@ class TournamentSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'created_at', 'updated_at', 'is_active', 'is_completed', 
                  'current_round', 'current_match_index', 'images', 'matches']
 
+class PublicTournamentSerializer(serializers.ModelSerializer):
+    images = TournamentImageSerializer(many=True, read_only=True)
+    user_name = serializers.SerializerMethodField()
+    first_image = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Tournament
+        fields = ['id', 'name', 'user_name', 'play_count', 'created_at', 'images', 'first_image']
+    
+    def get_user_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.email
+    
+    def get_first_image(self, obj):
+        real_images = [img for img in obj.images.all() if not img.name.startswith('BOŞ_')]
+        if real_images:
+            return TournamentImageSerializer(real_images[0], context=self.context).data
+        return None
+
 class TournamentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament

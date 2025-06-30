@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { CssBaseline, Box, useTheme } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
+import { CustomThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import Navbar from './components/Navbar';
 
 // Pages
 import Login from './pages/Login';
@@ -10,75 +12,79 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import TournamentPage from './pages/TournamentPage';
+import PublicTournaments from './pages/PublicTournaments';
+import About from './pages/About';
+import Contact from './pages/Contact';
 
-// Theme
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-  },
-});
+const AppContent: React.FC = () => {
+  const theme = useTheme();
+
+  return (
+    <Router>
+      <AuthProvider>
+        <Box 
+          sx={{ 
+            minHeight: '100vh', 
+            background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)` 
+          }}
+        >
+          <Navbar />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            
+            {/* Default route - redirect based on auth status */}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tournament"
+              element={
+                <ProtectedRoute>
+                  <TournamentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/public-tournaments"
+              element={
+                <ProtectedRoute>
+                  <PublicTournaments />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Box>
+      </AuthProvider>
+    </Router>
+  );
+};
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
+    <CustomThemeProvider>
       <CssBaseline />
-      <Router>
-        <AuthProvider>
-        <Routes>
-            {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          
-            {/* Protected routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/tournament"
-            element={
-              <ProtectedRoute>
-                <TournamentPage />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Redirect root to dashboard if authenticated, otherwise to login */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Navigate to="/dashboard" replace />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-        </AuthProvider>
-      </Router>
-    </ThemeProvider>
+      <AppContent />
+    </CustomThemeProvider>
   );
 };
 

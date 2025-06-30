@@ -198,20 +198,34 @@ npm start
 **Beklenen Sonuç:**
 - ✅ Turnuva tamamlanmalı
 - ✅ Kazanan resim gösterilmeli
-- ✅ Final sıralaması görünmeli
-- ✅ "Yeniden Başlat" seçeneği sunulmalı
 
-### Test Senaryosu 3.5: Turnuva Yeniden Başlatma
-**Amaç:** Tamamlanan turnuvayı yeniden başlatabildiğini doğrulamak
+### Test Senaryosu 3.5: Public Turnuvadan Katılım
+**Amaç:** Public turnuvadan katıldığında turnuvanın otomatik başladığını doğrulamak
 
 **Adımlar:**
-1. Tamamlanan turnuvada "Yeniden Başlat" butonuna tıkla
-2. Yeni resimler yükle
+1. Dashboard'da "Public Turnuvalar" butonuna tıkla
+2. Mevcut bir public turnuvayı seç
+3. "Turnuvaya Katıl" butonuna tıkla
 
 **Beklenen Sonuç:**
-- ✅ Yeni turnuva oluşturulmalı
-- ✅ Eski veriler temizlenmeli
-- ✅ Resim yükleme tekrar aktif olmalı
+- ✅ Turnuva otomatik olarak başlamalı
+- ✅ Resimler kopyalanmalı
+- ✅ İlk maç görünmeli (resim yükleme adımına yönlendirilmemeli)
+- ✅ Turnuva oyun adımında olmalı (step 1)
+
+### Test Senaryosu 3.6: Public Turnuva Oluşturma
+**Amaç:** Tamamlanan turnuvayı public yapabildiğini doğrulamak
+
+**Adımlar:**
+1. Bir turnuvayı tamamla
+2. "Evet, Public Yap" butonuna tıkla
+3. Turnuva ismini gir
+4. Onayla
+
+**Beklenen Sonuç:**
+- ✅ Turnuva public olmalı
+- ✅ Public turnuvalar listesinde görünmeli
+- ✅ Diğer kullanıcılar katılabilmeli
 
 ---
 

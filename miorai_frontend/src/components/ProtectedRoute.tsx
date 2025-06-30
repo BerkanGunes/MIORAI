@@ -18,8 +18,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         justifyContent="center"
         alignItems="center"
         minHeight="100vh"
+        sx={{
+          background: 'linear-gradient(135deg, #1f293a 0%, #2c4766 100%)',
+          fontFamily: 'Poppins, sans-serif',
+        }}
       >
-        <CircularProgress />
+        <CircularProgress 
+          sx={{ 
+            color: '#0ef',
+            filter: 'drop-shadow(0 0 15px #0ef)',
+          }}
+        />
       </Box>
     );
   }

@@ -12,6 +12,7 @@ import {
   LinearProgress,
   Grid,
   Chip,
+  useTheme,
 } from '@mui/material';
 import {
   CloudUpload,
@@ -36,6 +37,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   loading = false,
   tournamentStarted = false,
 }) => {
+  const theme = useTheme();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imageName, setImageName] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -106,22 +108,53 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   return (
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ImageIcon color="primary" />
+    <Box sx={{ mb: 4, fontFamily: 'Poppins, sans-serif' }}>
+      <Typography 
+        variant="h5" 
+        gutterBottom 
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1,
+          color: theme.palette.primary.main,
+          fontFamily: 'Poppins, sans-serif',
+          textShadow: `0 0 5px ${theme.palette.primary.main}`,
+          fontWeight: 'bold',
+        }}
+      >
+        <ImageIcon sx={{ color: theme.palette.primary.main, filter: `drop-shadow(0 0 5px ${theme.palette.primary.main})` }} />
         Resim Yönetimi
       </Typography>
 
       {/* Hata mesajı */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 2,
+            background: `${theme.palette.background.default}E6`,
+            border: '1px solid #ff4444',
+            boxShadow: '0 0 10px #ff4444',
+            color: '#ff4444',
+            fontFamily: 'Poppins, sans-serif',
+          }} 
+          onClose={() => setError(null)}
+        >
           {error}
         </Alert>
       )}
 
       {/* Upload alanı */}
       {!tournamentStarted && (
-        <Card sx={{ mb: 3, border: '2px dashed', borderColor: 'primary.main' }}>
+        <Card 
+          sx={{ 
+            mb: 3, 
+            border: `2px dashed ${theme.palette.primary.main}`,
+            background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+            boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+            fontFamily: 'Poppins, sans-serif',
+          }}
+        >
           <CardContent>
             <Box sx={{ textAlign: 'center', py: 2 }}>
               <input
@@ -137,23 +170,55 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 <Button
                   variant="outlined"
                   component="span"
-                  startIcon={<CloudUpload />}
+                  startIcon={<CloudUpload sx={{ color: theme.palette.primary.main }} />}
                   disabled={uploading}
                   size="large"
-                  sx={{ mb: 2 }}
+                  sx={{ 
+                    mb: 2,
+                    color: theme.palette.primary.main,
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                    background: `${theme.palette.primary.main}1A`,
+                    fontFamily: 'Poppins, sans-serif',
+                    '&:hover': {
+                      background: `${theme.palette.primary.main}33`,
+                      boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                      border: '2px solid #fff',
+                    },
+                    '&:disabled': {
+                      color: `${theme.palette.primary.main}80`,
+                      border: `2px solid ${theme.palette.primary.main}80`,
+                      boxShadow: 'none',
+                    },
+                  }}
                 >
                   Resim Seç
                 </Button>
               </label>
               
-              <Typography variant="body2" color="text.secondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.primary.main,
+                  fontFamily: 'Poppins, sans-serif',
+                  textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                }}
+              >
                 JPG, PNG formatlarında, maksimum 16MB
               </Typography>
 
               {/* Seçilen dosyalar */}
               {selectedFiles.length > 0 && (
                 <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                  <Typography 
+                    variant="subtitle2" 
+                    gutterBottom
+                    sx={{ 
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                    }}
+                  >
                     Seçilen Dosyalar:
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -162,7 +227,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                         key={index}
                         label={file.name}
                         size="small"
-                        color="primary"
+                        sx={{ 
+                          color: theme.palette.primary.main,
+                          borderColor: theme.palette.primary.main,
+                          fontFamily: 'Poppins, sans-serif',
+                          boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                        }}
                         variant="outlined"
                       />
                     ))}
@@ -173,16 +243,59 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     label="Resim İsmi"
                     value={imageName}
                     onChange={(e) => setImageName(e.target.value)}
-                    sx={{ mt: 2 }}
+                    sx={{ 
+                      mt: 2,
+                      '& .MuiOutlinedInput-root': {
+                        color: theme.palette.primary.main,
+                        fontFamily: 'Poppins, sans-serif',
+                        '& fieldset': {
+                          borderColor: theme.palette.primary.main,
+                          boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#fff',
+                          boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#fff',
+                          boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: theme.palette.primary.main,
+                        fontFamily: 'Poppins, sans-serif',
+                        textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                        '&.Mui-focused': {
+                          color: '#fff',
+                        },
+                      },
+                    }}
                     disabled={uploading}
                   />
 
                   <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'center' }}>
                     <Button
-                      variant="contained"
+                      variant="outlined"
                       onClick={handleUpload}
                       disabled={uploading || !imageName.trim()}
-                      startIcon={<CloudUpload />}
+                      startIcon={<CloudUpload sx={{ color: theme.palette.primary.main }} />}
+                      sx={{ 
+                        color: theme.palette.primary.main,
+                        border: `2px solid ${theme.palette.primary.main}`,
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                        background: `${theme.palette.primary.main}1A`,
+                        fontFamily: 'Poppins, sans-serif',
+                        '&:hover': {
+                          background: `${theme.palette.primary.main}33`,
+                          boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                          border: '2px solid #fff',
+                        },
+                        '&:disabled': {
+                          color: `${theme.palette.primary.main}80`,
+                          border: `2px solid ${theme.palette.primary.main}80`,
+                          boxShadow: 'none',
+                        },
+                      }}
                     >
                       Yükle
                     </Button>
@@ -190,7 +303,24 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                       variant="outlined"
                       onClick={clearSelection}
                       disabled={uploading}
-                      startIcon={<Cancel />}
+                      startIcon={<Cancel sx={{ color: theme.palette.primary.main }} />}
+                      sx={{ 
+                        color: theme.palette.primary.main,
+                        border: `2px solid ${theme.palette.primary.main}`,
+                        boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                        background: `${theme.palette.primary.main}1A`,
+                        fontFamily: 'Poppins, sans-serif',
+                        '&:hover': {
+                          background: `${theme.palette.primary.main}33`,
+                          boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                          border: '2px solid #fff',
+                        },
+                        '&:disabled': {
+                          color: `${theme.palette.primary.main}80`,
+                          border: `2px solid ${theme.palette.primary.main}80`,
+                          boxShadow: 'none',
+                        },
+                      }}
                     >
                       İptal
                     </Button>
@@ -203,21 +333,64 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       )}
 
       {/* Loading */}
-      {(uploading || loading) && <LinearProgress sx={{ mb: 2 }} />}
+      {(uploading || loading) && (
+        <LinearProgress 
+          sx={{ 
+            mb: 2,
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: theme.palette.primary.main,
+              boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+            },
+            '& .MuiLinearProgress-root': {
+              backgroundColor: `${theme.palette.primary.main}33`,
+            },
+          }} 
+        />
+      )}
 
       {/* Yüklenen resimler */}
-      <Typography variant="h6" gutterBottom>
+      <Typography 
+        variant="h6" 
+        gutterBottom
+        sx={{ 
+          color: theme.palette.primary.main,
+          fontFamily: 'Poppins, sans-serif',
+          textShadow: `0 0 5px ${theme.palette.primary.main}`,
+          fontWeight: 'bold',
+        }}
+      >
         Yüklenen Resimler ({images.length})
       </Typography>
 
       {images.length === 0 ? (
-        <Card>
+        <Card
+          sx={{ 
+            background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+            border: `1px solid ${theme.palette.primary.main}`,
+            boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+            fontFamily: 'Poppins, sans-serif',
+          }}
+        >
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <ImageIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary">
+            <ImageIcon sx={{ fontSize: 64, color: theme.palette.primary.main, mb: 2, filter: `drop-shadow(0 0 10px ${theme.palette.primary.main})` }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                textShadow: `0 0 5px ${theme.palette.primary.main}`,
+              }}
+            >
               Henüz resim yüklenmedi
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                textShadow: `0 0 3px ${theme.palette.primary.main}`,
+              }}
+            >
               Turnuvayı başlatmak için en az 2 resim yükleyin
             </Typography>
           </CardContent>
@@ -226,7 +399,19 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         <Grid container spacing={2}>
           {images.map((image) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={image.id}>
-              <Card>
+              <Card
+                sx={{ 
+                  background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+                  border: `1px solid ${theme.palette.primary.main}`,
+                  boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                  fontFamily: 'Poppins, sans-serif',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+              >
                 <Box
                   sx={{
                     position: 'relative',
@@ -247,11 +432,25 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     }}
                   />
                 </Box>
-                <CardContent>
-                  <Typography variant="subtitle1" noWrap>
+                <CardContent sx={{ background: `${theme.palette.background.default}CC` }}>
+                  <Typography 
+                    variant="subtitle1" 
+                    noWrap
+                    sx={{ 
+                      color: theme.palette.primary.main,
+                      fontFamily: 'Poppins, sans-serif',
+                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                    }}
+                  >
                     {image.name}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: `${theme.palette.primary.main}B3`,
+                      fontFamily: 'Poppins, sans-serif',
+                    }}
+                  >
                     {image.original_filename}
                   </Typography>
                   {tournamentStarted && (
@@ -259,22 +458,41 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                       <Chip
                         size="small"
                         label={`Puan: ${image.points}`}
-                        color={image.points > 0 ? 'success' : image.points < 0 ? 'error' : 'default'}
+                        sx={{ 
+                          color: image.points > 0 ? theme.palette.primary.main : '#ff4444',
+                          borderColor: image.points > 0 ? theme.palette.primary.main : '#ff4444',
+                          fontFamily: 'Poppins, sans-serif',
+                          boxShadow: `0 0 5px ${image.points > 0 ? theme.palette.primary.main : '#ff4444'}`,
+                        }}
+                        variant="outlined"
                       />
                       <Chip
                         size="small"
                         label={`Tur: ${image.rounds_played}`}
-                        sx={{ ml: 1 }}
+                        sx={{ 
+                          ml: 1,
+                          color: theme.palette.primary.main,
+                          borderColor: theme.palette.primary.main,
+                          fontFamily: 'Poppins, sans-serif',
+                          boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                        }}
+                        variant="outlined"
                       />
                     </Box>
                   )}
                 </CardContent>
                 {!tournamentStarted && (
-                  <CardActions>
+                  <CardActions sx={{ background: `${theme.palette.background.default}CC` }}>
                     <IconButton
                       size="small"
                       onClick={() => handleDelete(image.id)}
-                      color="error"
+                      sx={{ 
+                        color: '#ff4444',
+                        '&:hover': {
+                          color: '#ff6666',
+                          filter: 'drop-shadow(0 0 5px #ff4444)',
+                        },
+                      }}
                     >
                       <Delete />
                     </IconButton>

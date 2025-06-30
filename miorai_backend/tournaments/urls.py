@@ -9,4 +9,8 @@ urlpatterns = [
     path('start/', views.StartTournamentView.as_view(), name='start-tournament'),
     path('submit-result/<int:match_id>/', views.SubmitMatchResultView.as_view(), name='submit-result'),
     path('current-match/', views.GetCurrentMatchView.as_view(), name='current-match'),
+    path('public/', views.PublicTournamentsListView.as_view(), name='public-tournaments'),
+    path('make-public/', views.MakeTournamentPublicView.as_view(), name='make-public'),
+    path('create-from-public/<int:tournament_id>/', views.CreateTournamentFromPublicView.as_view(), name='create-from-public'),
+    path('delete/', views.DeleteTournamentView.as_view(), name='delete-tournament'),
 ] 

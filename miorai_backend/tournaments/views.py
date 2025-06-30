@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 from .models import Tournament, TournamentImage, Match
 from .serializers import (
     TournamentSerializer, TournamentCreateSerializer, 
-    ImageUploadSerializer, TournamentImageSerializer
+    ImageUploadSerializer, TournamentImageSerializer,
+    PublicTournamentSerializer
 )
 import json
 import math
@@ -19,7 +20,7 @@ class TournamentCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class TournamentDetailView(generics.RetrieveAPIView):
+class TournamentDetailView(generics.RetrieveAPIView, generics.UpdateAPIView):
     serializer_class = TournamentSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -365,3 +366,160 @@ class GetCurrentMatchView(APIView):
             return Response(MatchSerializer(current_match, context={'request': request}).data)
         
         return Response({"no_match": True})
+
+class PublicTournamentsListView(generics.ListAPIView):
+    """Public turnuvaları listele"""
+    serializer_class = PublicTournamentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Tournament.objects.filter(
+            is_public=True,
+            is_completed=True
+        ).order_by('-play_count', '-created_at')
+
+class MakeTournamentPublicView(APIView):
+    """Turnuvayı public yap"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
+        
+        if not tournament.is_completed:
+            return Response(
+                {"error": "Sadece tamamlanan turnuvalar public yapılabilir."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        new_name = request.data.get('name', tournament.name)
+        tournament.name = new_name
+        tournament.is_public = True
+        tournament.save()
+        
+        return Response(
+            {"message": "Turnuva başarıyla public yapıldı."},
+            status=status.HTTP_200_OK
+        )
+
+class CreateTournamentFromPublicView(APIView):
+    """Public turnuvadan kendi turnuvamı oluştur"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, tournament_id):
+        # Kaynak turnuvayı bul
+        source_tournament = get_object_or_404(Tournament, id=tournament_id, is_public=True)
+        
+        # Mevcut aktif turnuvayı kapat
+        Tournament.objects.filter(user=request.user, is_active=True).update(is_active=False)
+        
+        # Yeni turnuva oluştur
+        new_tournament = Tournament.objects.create(
+            user=request.user,
+            name=source_tournament.name
+        )
+        
+        # Resimleri kopyala (BOŞ olmayan)
+        source_images = source_tournament.images.filter(
+            name__isnull=False
+        ).exclude(name__startswith='BOŞ_')
+        
+        for idx, source_image in enumerate(source_images):
+            TournamentImage.objects.create(
+                tournament=new_tournament,
+                image=source_image.image,  # Aynı dosyayı referans et
+                name=source_image.name,
+                original_filename=source_image.original_filename,
+                order_index=idx
+            )
+        
+        # Kaynak turnuvanın oynanma sayısını artır
+        source_tournament.play_count += 1
+        source_tournament.save()
+        
+        # Turnuvayı otomatik olarak başlat
+        self._start_tournament_automatically(new_tournament)
+        
+        return Response(
+            TournamentSerializer(new_tournament, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    def _start_tournament_automatically(self, tournament):
+        """Turnuvayı otomatik olarak başlat"""
+        images = list(tournament.images.all())
+        if len(images) < 2:
+            return  # En az 2 resim gerekli
+        
+        # BOŞ resimler ekle (2'nin kuvvetine tamamla)
+        image_count = len(images)
+        next_power_of_2 = 2 ** math.ceil(math.log2(image_count))
+        empty_slots = next_power_of_2 - image_count
+        
+        for i in range(empty_slots):
+            TournamentImage.objects.create(
+                tournament=tournament,
+                name=f"BOŞ_{i}",
+                original_filename=f"empty_{i}",
+                points=-500 - i,
+                order_index=len(images) + i
+            )
+        
+        # Win matrix oluştur
+        total_images = tournament.images.count()
+        win_matrix = [[0 for _ in range(total_images)] for _ in range(total_images)]
+        tournament.set_win_matrix(win_matrix)
+        tournament.save()
+        
+        # İlk round'u başlat
+        self._create_next_round_matches(tournament)
+    
+    def _create_next_round_matches(self, tournament):
+        """İlk round maçlarını oluştur"""
+        images = list(tournament.images.all())
+        
+        # Tur-puan kombinasyonuna göre grupla
+        grouped = {}
+        for image in images:
+            key = f"{image.rounds_played}-{image.points}"
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(image)
+        
+        match_index = 0
+        for group in grouped.values():
+            for i in range(0, len(group), 2):
+                if i + 1 < len(group):
+                    # Çift sayıda resim, maç oluştur
+                    Match.objects.create(
+                        tournament=tournament,
+                        image1=group[i],
+                        image2=group[i + 1],
+                        round_number=tournament.current_round,
+                        match_index=match_index
+                    )
+                    match_index += 1
+                else:
+                    # Tek resim kaldı, bye ver
+                    image = group[i]
+                    image.rounds_played += 1
+                    image.save()
+
+class DeleteTournamentView(APIView):
+    """Turnuvayı sil (public yapmak istemeyenler için)"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def delete(self, request):
+        tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
+        
+        if not tournament.is_completed:
+            return Response(
+                {"error": "Sadece tamamlanan turnuvalar silinebilir."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        tournament.delete()
+        
+        return Response(
+            {"message": "Turnuva başarıyla silindi."},
+            status=status.HTTP_200_OK
+        )
