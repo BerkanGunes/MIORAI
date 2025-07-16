@@ -28,10 +28,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Şifreler eşleşmiyor."})
         
-        try:
-            validate_password(attrs['password'])
-        except ValidationError as e:
-            raise serializers.ValidationError({"password": list(e.messages)})
+        # Basit şifre validasyonu (Django'nun katı validasyonu yerine)
+        password = attrs['password']
+        if len(password) < 8:
+            raise serializers.ValidationError({"password": ["Şifre en az 8 karakter olmalıdır."]})
+        if not any(c.isupper() for c in password):
+            raise serializers.ValidationError({"password": ["Şifre en az bir büyük harf içermelidir."]})
+        if not any(c.islower() for c in password):
+            raise serializers.ValidationError({"password": ["Şifre en az bir küçük harf içermelidir."]})
+        if not any(c.isdigit() for c in password):
+            raise serializers.ValidationError({"password": ["Şifre en az bir rakam içermelidir."]})
+        if not any(c in '!@#$%^&*' for c in password):
+            raise serializers.ValidationError({"password": ["Şifre en az bir özel karakter içermelidir (!@#$%^&*)."]})
         
         return attrs
 

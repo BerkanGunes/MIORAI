@@ -13,12 +13,17 @@ import {
   Grid,
   Chip,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   CloudUpload,
   Delete,
   Image as ImageIcon,
   Cancel,
+  Edit,
 } from '@mui/icons-material';
 import { TournamentImage } from '../../types/tournament';
 
@@ -26,54 +31,76 @@ interface ImageUploadProps {
   images: TournamentImage[];
   onUpload: (file: File, name: string) => Promise<void>;
   onDelete: (imageId: number) => Promise<void>;
+  onUpdateName?: (imageId: number, name: string) => Promise<void>;
   loading?: boolean;
   tournamentStarted?: boolean;
+}
+
+interface SelectedFile {
+  file: File;
+  name: string;
+  id: string;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
   images,
   onUpload,
   onDelete,
+  onUpdateName,
   loading = false,
   tournamentStarted = false,
 }) => {
   const theme = useTheme();
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [imageName, setImageName] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingImage, setEditingImage] = useState<TournamentImage | null>(null);
+  const [editName, setEditName] = useState('');
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
     // Dosya validasyonu
-    const validFiles = files.filter(file => {
+    const validFiles: SelectedFile[] = [];
+    for (const file of files) {
       if (file.size > 16 * 1024 * 1024) {
         setError(`${file.name} dosyası 16MB'dan büyük.`);
-        return false;
+        continue;
       }
       
       if (!['image/jpeg', 'image/png'].includes(file.type)) {
         setError(`${file.name} desteklenmeyen format. Sadece JPG ve PNG.`);
-        return false;
+        continue;
       }
       
-      return true;
-    });
-
-    setSelectedFiles(validFiles);
-    setError(null);
-    
-    // İlk dosyanın adını varsayılan isim yap
-    if (validFiles.length > 0) {
-      const fileName = validFiles[0].name.replace(/\.[^/.]+$/, '');
-      setImageName(fileName);
+      // Dosya adını uzantısız olarak al
+      const fileName = file.name.replace(/\.[^/.]+$/, '');
+      validFiles.push({
+        file,
+        name: fileName,
+        id: Math.random().toString(36).substr(2, 9)
+      });
     }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    setError(null);
   }, []);
 
+  const handleNameChange = (id: string, newName: string) => {
+    setSelectedFiles(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, name: newName } : item
+      )
+    );
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setSelectedFiles(prev => prev.filter(item => item.id !== id));
+  };
+
   const handleUpload = async () => {
-    if (selectedFiles.length === 0 || !imageName.trim()) {
-      setError('Dosya ve isim gerekli.');
+    if (selectedFiles.length === 0) {
+      setError('En az bir dosya seçin.');
       return;
     }
 
@@ -81,11 +108,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setError(null);
 
     try {
-      for (const file of selectedFiles) {
-        await onUpload(file, imageName || file.name);
+      for (const selectedFile of selectedFiles) {
+        await onUpload(selectedFile.file, selectedFile.name || selectedFile.file.name);
       }
       setSelectedFiles([]);
-      setImageName('');
     } catch (error: any) {
       setError(error.response?.data?.error || 'Yükleme hatası.');
     } finally {
@@ -101,9 +127,27 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
   };
 
+  const handleEditName = (image: TournamentImage) => {
+    setEditingImage(image);
+    setEditName(image.name);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingImage || !editName.trim()) return;
+    
+    try {
+      if (onUpdateName) {
+        await onUpdateName(editingImage.id, editName);
+      }
+      setEditingImage(null);
+      setEditName('');
+    } catch (error: any) {
+      setError('İsim güncelleme hatası.');
+    }
+  };
+
   const clearSelection = () => {
     setSelectedFiles([]);
-    setImageName('');
     setError(null);
   };
 
@@ -209,75 +253,121 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
               {/* Seçilen dosyalar */}
               {selectedFiles.length > 0 && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 3 }}>
                   <Typography 
-                    variant="subtitle2" 
+                    variant="h6" 
                     gutterBottom
                     sx={{ 
                       color: theme.palette.primary.main,
                       fontFamily: 'Poppins, sans-serif',
                       textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                      fontWeight: 'bold',
                     }}
                   >
-                    Seçilen Dosyalar:
+                    Seçilen Resimler ({selectedFiles.length})
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-                    {selectedFiles.map((file, index) => (
-                      <Chip
-                        key={index}
-                        label={file.name}
-                        size="small"
-                        sx={{ 
-                          color: theme.palette.primary.main,
-                          borderColor: theme.palette.primary.main,
-                          fontFamily: 'Poppins, sans-serif',
-                          boxShadow: `0 0 5px ${theme.palette.primary.main}`,
-                        }}
-                        variant="outlined"
-                      />
+                  
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    {selectedFiles.map((selectedFile) => (
+                      <Grid item xs={12} sm={6} md={4} key={selectedFile.id}>
+                        <Card
+                          sx={{ 
+                            background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+                            border: `1px solid ${theme.palette.primary.main}`,
+                            boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                            fontFamily: 'Poppins, sans-serif',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              paddingTop: '75%',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <img
+                              src={URL.createObjectURL(selectedFile.file)}
+                              alt={selectedFile.file.name}
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                          </Box>
+                          <CardContent>
+                            <TextField
+                              fullWidth
+                              label="Resim İsmi"
+                              value={selectedFile.name}
+                              onChange={(e) => handleNameChange(selectedFile.id, e.target.value)}
+                              size="small"
+                              sx={{ 
+                                mb: 1,
+                                '& .MuiOutlinedInput-root': {
+                                  color: theme.palette.primary.main,
+                                  fontFamily: 'Poppins, sans-serif',
+                                  '& fieldset': {
+                                    borderColor: theme.palette.primary.main,
+                                    boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: '#fff',
+                                    boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: '#fff',
+                                    boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                                  },
+                                },
+                                '& .MuiInputLabel-root': {
+                                  color: theme.palette.primary.main,
+                                  fontFamily: 'Poppins, sans-serif',
+                                  textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                                  '&.Mui-focused': {
+                                    color: '#fff',
+                                  },
+                                },
+                              }}
+                            />
+                            <Typography 
+                              variant="caption" 
+                              sx={{ 
+                                color: `${theme.palette.primary.main}B3`,
+                                fontFamily: 'Poppins, sans-serif',
+                              }}
+                            >
+                              {selectedFile.file.name}
+                            </Typography>
+                            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleRemoveFile(selectedFile.id)}
+                                sx={{ 
+                                  color: '#ff4444',
+                                  '&:hover': {
+                                    color: '#ff6666',
+                                    filter: 'drop-shadow(0 0 5px #ff4444)',
+                                  },
+                                }}
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
                     ))}
-                  </Box>
+                  </Grid>
 
-                  <TextField
-                    fullWidth
-                    label="Resim İsmi"
-                    value={imageName}
-                    onChange={(e) => setImageName(e.target.value)}
-                    sx={{ 
-                      mt: 2,
-                      '& .MuiOutlinedInput-root': {
-                        color: theme.palette.primary.main,
-                        fontFamily: 'Poppins, sans-serif',
-                        '& fieldset': {
-                          borderColor: theme.palette.primary.main,
-                          boxShadow: `0 0 5px ${theme.palette.primary.main}`,
-                        },
-                        '&:hover fieldset': {
-                          borderColor: '#fff',
-                          boxShadow: `0 0 10px ${theme.palette.primary.main}`,
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#fff',
-                          boxShadow: `0 0 15px ${theme.palette.primary.main}`,
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: theme.palette.primary.main,
-                        fontFamily: 'Poppins, sans-serif',
-                        textShadow: `0 0 3px ${theme.palette.primary.main}`,
-                        '&.Mui-focused': {
-                          color: '#fff',
-                        },
-                      },
-                    }}
-                    disabled={uploading}
-                  />
-
-                  <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'center' }}>
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                     <Button
                       variant="outlined"
                       onClick={handleUpload}
-                      disabled={uploading || !imageName.trim()}
+                      disabled={uploading}
                       startIcon={<CloudUpload sx={{ color: theme.palette.primary.main }} />}
                       sx={{ 
                         color: theme.palette.primary.main,
@@ -297,7 +387,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                         },
                       }}
                     >
-                      Yükle
+                      Tümünü Yükle
                     </Button>
                     <Button
                       variant="outlined"
@@ -415,7 +505,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 <Box
                   sx={{
                     position: 'relative',
-                    paddingTop: '75%', // 4:3 aspect ratio
+                    paddingTop: '75%',
                     overflow: 'hidden',
                   }}
                 >
@@ -433,17 +523,35 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                   />
                 </Box>
                 <CardContent sx={{ background: `${theme.palette.background.default}CC` }}>
-                  <Typography 
-                    variant="subtitle1" 
-                    noWrap
-                    sx={{ 
-                      color: theme.palette.primary.main,
-                      fontFamily: 'Poppins, sans-serif',
-                      textShadow: `0 0 3px ${theme.palette.primary.main}`,
-                    }}
-                  >
-                    {image.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography 
+                      variant="subtitle1" 
+                      noWrap
+                      sx={{ 
+                        color: theme.palette.primary.main,
+                        fontFamily: 'Poppins, sans-serif',
+                        textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                        flex: 1,
+                      }}
+                    >
+                      {image.name}
+                    </Typography>
+                    {!tournamentStarted && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditName(image)}
+                        sx={{ 
+                          color: theme.palette.primary.main,
+                          '&:hover': {
+                            color: '#fff',
+                            filter: `drop-shadow(0 0 5px ${theme.palette.primary.main})`,
+                          },
+                        }}
+                      >
+                        <Edit />
+                      </IconButton>
+                    )}
+                  </Box>
                   <Typography 
                     variant="caption" 
                     sx={{ 
@@ -503,6 +611,74 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           ))}
         </Grid>
       )}
+
+      {/* İsim düzenleme dialog'u */}
+      <Dialog 
+        open={!!editingImage} 
+        onClose={() => setEditingImage(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: theme.palette.primary.main, fontFamily: 'Poppins, sans-serif' }}>
+          Resim İsmini Düzenle
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Resim İsmi"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            sx={{ 
+              mt: 1,
+              '& .MuiOutlinedInput-root': {
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                '& fieldset': {
+                  borderColor: theme.palette.primary.main,
+                  boxShadow: `0 0 5px ${theme.palette.primary.main}`,
+                },
+                '&:hover fieldset': {
+                  borderColor: '#fff',
+                  boxShadow: `0 0 10px ${theme.palette.primary.main}`,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#fff',
+                  boxShadow: `0 0 15px ${theme.palette.primary.main}`,
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: theme.palette.primary.main,
+                fontFamily: 'Poppins, sans-serif',
+                textShadow: `0 0 3px ${theme.palette.primary.main}`,
+                '&.Mui-focused': {
+                  color: '#fff',
+                },
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setEditingImage(null)}
+            sx={{ color: theme.palette.primary.main, fontFamily: 'Poppins, sans-serif' }}
+          >
+            İptal
+          </Button>
+          <Button 
+            onClick={handleSaveEdit}
+            disabled={!editName.trim()}
+            sx={{ 
+              color: theme.palette.primary.main, 
+              fontFamily: 'Poppins, sans-serif',
+              '&:disabled': {
+                color: `${theme.palette.primary.main}80`,
+              },
+            }}
+          >
+            Kaydet
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

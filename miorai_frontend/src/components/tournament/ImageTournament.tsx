@@ -66,13 +66,10 @@ const ImageTournament: React.FC = () => {
         if (existingTournament.is_completed) {
           setStep(2);
         } else if (existingTournament.matches && existingTournament.matches.length > 0) {
-          // Turnuva başlamış, oyun adımına geç
           setStep(1);
-          // Mevcut maçı getir
           const match = await tournamentService.getCurrentMatch();
           setCurrentMatch(match);
         } else {
-          // Turnuva henüz başlamamış, resim yükleme adımında
           setStep(0);
         }
       } catch (error) {
@@ -103,6 +100,16 @@ const ImageTournament: React.FC = () => {
   const handleImageDelete = async (imageId: number) => {
     try {
       await tournamentService.deleteImage(imageId);
+      const updatedTournament = await tournamentService.getTournament();
+      setTournament(updatedTournament);
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const handleImageUpdateName = async (imageId: number, name: string) => {
+    try {
+      await tournamentService.updateImageName(imageId, name);
       const updatedTournament = await tournamentService.getTournament();
       setTournament(updatedTournament);
     } catch (err: any) {
@@ -150,11 +157,12 @@ const ImageTournament: React.FC = () => {
       if (updatedTournament.is_completed) {
         setStep(2);
         setCurrentMatch(null);
-        // Tournament tamamlandı, public yapma modal'ını göster
-        setTournamentName(updatedTournament.name);
-        setShowPublicModal(true);
+        // Sadece yeni oluşturulan turnuvalar için public yapma modal'ını göster
+        if (!updatedTournament.is_from_public) {
+          setTournamentName(updatedTournament.name);
+          setShowPublicModal(true);
+        }
       } else {
-        // Sonraki maçı getir
         const nextMatch = await tournamentService.getCurrentMatch();
         setCurrentMatch(nextMatch);
       }
@@ -367,6 +375,7 @@ const ImageTournament: React.FC = () => {
             images={tournament.images || []}
             onUpload={handleImageUpload}
             onDelete={handleImageDelete}
+            onUpdateName={handleImageUpdateName}
             loading={loading}
             tournamentStarted={false}
           />
@@ -556,7 +565,10 @@ const ImageTournament: React.FC = () => {
                 textShadow: `0 0 5px ${theme.palette.primary.main}`,
               }}
             >
-              Kazananlar aşağıda sıralanmıştır
+              {tournament.is_from_public 
+                ? 'Bu turnuvayı başarıyla tamamladınız! Sonuçlar aşağıda sıralanmıştır.'
+                : 'Kazananlar aşağıda sıralanmıştır'
+              }
             </Typography>
           </Paper>
 

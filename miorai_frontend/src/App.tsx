@@ -15,12 +15,13 @@ import TournamentPage from './pages/TournamentPage';
 import PublicTournaments from './pages/PublicTournaments';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import VerifyEmail from './pages/VerifyEmail';
 
 const AppContent: React.FC = () => {
   const theme = useTheme();
 
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <Box 
           sx={{ 
@@ -34,6 +35,7 @@ const AppContent: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             

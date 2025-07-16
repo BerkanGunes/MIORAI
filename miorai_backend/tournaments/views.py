@@ -18,6 +18,8 @@ class TournamentCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def perform_create(self, serializer):
+        # Önce mevcut aktif turnuvaları pasif yap
+        Tournament.objects.filter(user=self.request.user, is_active=True).update(is_active=False)
         serializer.save(user=self.request.user)
 
 class TournamentDetailView(generics.RetrieveAPIView, generics.UpdateAPIView):
@@ -32,27 +34,43 @@ class ImageUploadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request):
-        tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
-        
-        # Turnuva başlamışsa resim yüklenemez
-        if tournament.matches.exists():
+        try:
+            tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
+            
+            # Turnuva başlamışsa resim yüklenemez
+            if tournament.matches.exists():
+                return Response(
+                    {"error": "Turnuva başladıktan sonra resim eklenemez."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            serializer = ImageUploadSerializer(data=request.data)
+            if serializer.is_valid():
+                # Eğer name verilmemişse dosya adını kullan
+                name = serializer.validated_data.get('name')
+                if not name:
+                    import re
+                    name = re.sub(r'\.[^/.]+$', '', request.FILES['image'].name)  # Uzantıyı kaldır
+                
+                image = serializer.save(
+                    tournament=tournament,
+                    original_filename=request.FILES['image'].name,
+                    name=name,
+                    order_index=tournament.images.count()
+                )
+                return Response(
+                    TournamentImageSerializer(image, context={'request': request}).data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            import traceback
+            print(f"ImageUploadView Error: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
             return Response(
-                {"error": "Turnuva başladıktan sonra resim eklenemez."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": f"Resim yükleme hatası: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-        serializer = ImageUploadSerializer(data=request.data)
-        if serializer.is_valid():
-            image = serializer.save(
-                tournament=tournament,
-                original_filename=request.FILES['image'].name,
-                order_index=tournament.images.count()
-            )
-            return Response(
-                TournamentImageSerializer(image, context={'request': request}).data,
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ImageDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -70,6 +88,35 @@ class ImageDeleteView(APIView):
         
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ImageUpdateNameView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def patch(self, request, image_id):
+        tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
+        image = get_object_or_404(TournamentImage, id=image_id, tournament=tournament)
+        
+        # Turnuva başlamışsa resim ismi değiştirilemez
+        if tournament.matches.exists():
+            return Response(
+                {"error": "Turnuva başladıktan sonra resim ismi değiştirilemez."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        name = request.data.get('name')
+        if not name or not name.strip():
+            return Response(
+                {"error": "Resim ismi boş olamaz."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        image.name = name.strip()
+        image.save()
+        
+        return Response(
+            TournamentImageSerializer(image, context={'request': request}).data,
+            status=status.HTTP_200_OK
+        )
 
 class StartTournamentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -415,7 +462,8 @@ class CreateTournamentFromPublicView(APIView):
         # Yeni turnuva oluştur
         new_tournament = Tournament.objects.create(
             user=request.user,
-            name=source_tournament.name
+            name=source_tournament.name,
+            is_from_public=True
         )
         
         # Resimleri kopyala (BOŞ olmayan)

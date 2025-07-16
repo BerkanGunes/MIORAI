@@ -52,6 +52,12 @@ export const tournamentService = {
     await tournamentApi.delete(`/delete-image/${imageId}/`);
   },
 
+  // Resim ismini güncelle
+  async updateImageName(imageId: number, name: string): Promise<any> {
+    const response = await tournamentApi.patch(`/update-image-name/${imageId}/`, { name });
+    return response.data;
+  },
+
   // Tournament'ı başlat
   async startTournament(): Promise<Tournament> {
     const response = await tournamentApi.post('/start/');

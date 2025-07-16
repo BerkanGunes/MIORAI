@@ -12,6 +12,7 @@ class Tournament(models.Model):
     is_active = models.BooleanField(default=True)
     is_completed = models.BooleanField(default=False)
     is_public = models.BooleanField(default=False)
+    is_from_public = models.BooleanField(default=False)  # Public turnuvadan kopyalanıp kopyalanmadığını belirtir
     play_count = models.IntegerField(default=0)
     current_round = models.IntegerField(default=1)
     current_match_index = models.IntegerField(default=0)

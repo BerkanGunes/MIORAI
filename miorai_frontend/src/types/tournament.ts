@@ -29,6 +29,7 @@ export interface Tournament {
   current_match_index: number;
   images: TournamentImage[];
   matches: Match[];
+  is_from_public?: boolean;
 }
 
 export interface TournamentCreateData {

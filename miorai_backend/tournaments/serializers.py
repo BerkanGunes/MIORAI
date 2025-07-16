@@ -29,7 +29,7 @@ class TournamentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament
         fields = ['id', 'name', 'created_at', 'updated_at', 'is_active', 'is_completed', 
-                 'current_round', 'current_match_index', 'images', 'matches']
+                 'current_round', 'current_match_index', 'images', 'matches', 'is_from_public']
 
 class PublicTournamentSerializer(serializers.ModelSerializer):
     images = TournamentImageSerializer(many=True, read_only=True)

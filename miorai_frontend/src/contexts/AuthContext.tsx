@@ -58,9 +58,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       const response = await authService.register(data);
       setUser(response.user);
+      // Email doğrulama sayfasına yönlendir
       navigate('/verify-email');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Kayıt olurken bir hata oluştu');
+      console.error('Register error:', err);
+      // Daha detaylı hata mesajları
+      if (err.response?.status === 500) {
+        setError('Sunucu hatası. Lütfen daha sonra tekrar deneyin.');
+      } else if (err.response?.data?.email) {
+        setError(err.response.data.email[0]);
+      } else if (err.response?.data?.password) {
+        setError(err.response.data.password[0]);
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('Kayıt olurken bir hata oluştu. Lütfen tekrar deneyin.');
+      }
       throw err;
     }
   };

@@ -38,15 +38,20 @@ class RegisterAPI(generics.GenericAPIView):
             algorithm='HS256'
         )
         
-        # Doğrulama emaili gönder
-        verification_url = f"http://localhost:3000/verify-email?token={token}"
-        send_mail(
-            'Email Adresinizi Doğrulayın',
-            f'Email adresinizi doğrulamak için aşağıdaki linke tıklayın:\n\n{verification_url}',
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
+        # Doğrulama emaili gönder (güvenli)
+        try:
+            verification_url = f"http://localhost:3000/verify-email?token={token}"
+            send_mail(
+                'Email Adresinizi Doğrulayın',
+                f'Email adresinizi doğrulamak için aşağıdaki linke tıklayın:\n\n{verification_url}',
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=True,  # Hata durumunda sessizce devam et
+            )
+            print(f"Email doğrulama gönderildi: {user.email}")
+        except Exception as e:
+            print(f"Email gönderme hatası: {str(e)}")
+            # Email gönderilemese bile kullanıcı kaydı tamamlanır
         
         return Response({
             "user": UserSerializer(user, context=self.get_serializer_context()).data,
