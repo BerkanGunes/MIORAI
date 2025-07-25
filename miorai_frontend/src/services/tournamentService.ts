@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Tournament, TournamentCreateData, ImageUploadData, Match } from '../types/tournament';
 
 const API_URL = 'http://localhost:8000/api/tournaments';
+const ML_API_URL = 'http://localhost:8000/api/ml';
 
 // Axios instance oluştur
 const tournamentApi = axios.create({
@@ -11,8 +12,23 @@ const tournamentApi = axios.create({
   },
 });
 
+const mlApi = axios.create({
+  baseURL: ML_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Request interceptor - token ekle
 tournamentApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Token ${token}`;
+  }
+  return config;
+});
+
+mlApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Token ${token}`;
@@ -110,6 +126,25 @@ export const tournamentService = {
   // Aktif turnuvanın adını güncelle
   async updateTournamentName(name: string): Promise<void> {
     await tournamentApi.patch('/detail/', { name });
+  },
+
+  // ML API metodları
+  // Kategorileri getir
+  async getCategories(): Promise<any[]> {
+    const response = await mlApi.get('/categories/');
+    return response.data;
+  },
+
+  // Benzerlik analizi
+  async getSimilarityAnalysis(): Promise<any> {
+    const response = await mlApi.post('/similarity-analysis/');
+    return response.data;
+  },
+
+  // Model durumu
+  async getModelStatus(): Promise<any> {
+    const response = await mlApi.get('/model-status/');
+    return response.data;
   },
 };
 

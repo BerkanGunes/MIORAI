@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Tournament, TournamentImage, Match
+from .models import Tournament, TournamentImage, Match, CATEGORY_CHOICES
 
 class TournamentImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -25,20 +25,22 @@ class MatchSerializer(serializers.ModelSerializer):
 class TournamentSerializer(serializers.ModelSerializer):
     images = TournamentImageSerializer(many=True, read_only=True)
     matches = MatchSerializer(many=True, read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
     
     class Meta:
         model = Tournament
-        fields = ['id', 'name', 'created_at', 'updated_at', 'is_active', 'is_completed', 
+        fields = ['id', 'name', 'category', 'category_display', 'created_at', 'updated_at', 'is_active', 'is_completed', 
                  'current_round', 'current_match_index', 'images', 'matches', 'is_from_public']
 
 class PublicTournamentSerializer(serializers.ModelSerializer):
     images = TournamentImageSerializer(many=True, read_only=True)
     user_name = serializers.SerializerMethodField()
     first_image = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
     
     class Meta:
         model = Tournament
-        fields = ['id', 'name', 'user_name', 'play_count', 'created_at', 'images', 'first_image']
+        fields = ['id', 'name', 'category', 'category_display', 'user_name', 'play_count', 'created_at', 'images', 'first_image']
     
     def get_user_name(self, obj):
         return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.email
@@ -52,7 +54,7 @@ class PublicTournamentSerializer(serializers.ModelSerializer):
 class TournamentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tournament
-        fields = ['name']
+        fields = ['name', 'category']
 
 class ImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
@@ -68,4 +70,22 @@ class ImageUploadSerializer(serializers.ModelSerializer):
         if not value.content_type in ['image/jpeg', 'image/png']:
             raise serializers.ValidationError("Sadece JPG ve PNG formatları desteklenmektedir.")
         
-        return value 
+        return value
+
+class CategorySerializer(serializers.Serializer):
+    """Kategori listesi için serializer"""
+    value = serializers.CharField()
+    label = serializers.CharField()
+
+class MatchPredictionSerializer(serializers.Serializer):
+    """ML tahmin sonuçları için serializer - Güven aralığı yaklaşımı"""
+    n_images = serializers.IntegerField()
+    prediction = serializers.DictField(allow_null=True)
+    message = serializers.CharField(allow_null=True, required=False)
+    error = serializers.CharField(allow_null=True, required=False)
+
+class SimilarityAnalysisSerializer(serializers.Serializer):
+    """Benzerlik analizi için serializer"""
+    similarity_score = serializers.FloatField()
+    similarity_level = serializers.CharField()
+    analysis_note = serializers.CharField() 

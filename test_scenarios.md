@@ -22,6 +22,17 @@ npm start
 - Test resimleri (JPG, PNG formatında)
 - Farklı boyutlarda resimler (küçük, orta, büyük)
 - Farklı formatlarda dosyalar
+- **Kategori Test Verileri:**
+  - Anime karakteri resimleri (Anime/Manga kategorisi için)
+  - Doğa manzaraları (Nature kategorisi için)
+  - Bina/şehir fotoğrafları (Architecture kategorisi için)
+  - İnsan portreleri (People kategorisi için)
+  - Hayvan fotoğrafları (Animals kategorisi için)
+  - Yemek fotoğrafları (Food kategorisi için)
+  - Sanat eserleri (Art kategorisi için)
+  - Teknoloji ürünleri (Technology kategorisi için)
+  - Spor aktiviteleri (Sports kategorisi için)
+  - Karışık içerikler (General kategorisi için)
 
 ---
 
@@ -90,70 +101,54 @@ npm start
 3. "Şifre Sıfırla" butonuna tıkla
 
 **Beklenen Sonuç:**
-- ✅ Email gönderildi mesajı görünmeli
 - ✅ Şifre sıfırlama emaili gönderilmeli
+- ✅ Başarı mesajı görünmeli
 
 ---
 
-## 📁 Sprint 2: Dosya İşleme Testleri
+## 🏆 Sprint 2: Turnuva Sistemi Testleri
 
-### Test Senaryosu 2.1: Resim Yükleme
+### Test Senaryosu 2.1: Turnuva Oluşturma
+**Amaç:** Yeni turnuva oluşturmanın doğru çalıştığını doğrulamak
+
+**Adımlar:**
+1. Dashboard'da "Kendi Turnuvanı Yarat" butonuna tıkla
+2. Turnuva adını gir: `Test Turnuvası`
+3. "Turnuva Oluştur" butonuna tıkla
+
+**Beklenen Sonuç:**
+- ✅ Turnuva oluşturulmalı
+- ✅ Resim yükleme sayfasına yönlendirilmeli
+- ✅ Veritabanında turnuva kaydı oluşturulmalı
+
+### Test Senaryosu 2.2: Resim Yükleme
 **Amaç:** Resim yükleme işleminin doğru çalıştığını doğrulamak
 
 **Adımlar:**
-1. Dashboard'da "Turnuvaya Başla" butonuna tıkla
-2. "Resim Yükle" butonuna tıkla
-3. Test resmi seç (JPG/PNG formatında)
-4. Resim adını gir: "Test Resim 1"
-5. "Yükle" butonuna tıkla
+1. Turnuva oluşturma sayfasında "Resim Yükle" butonuna tıkla
+2. Geçerli bir resim dosyası seç (JPG/PNG)
+3. Resim adını gir: `Test Resim 1`
+4. "Yükle" butonuna tıkla
 
 **Beklenen Sonuç:**
 - ✅ Resim başarıyla yüklenmeli
 - ✅ Resim listesinde görünmeli
-- ✅ Yükleme durumu göstergesi çalışmalı
+- ✅ Sunucuda `tournament_images/` klasöründe saklanmalı
 
-### Test Senaryosu 2.2: Geçersiz Dosya Yükleme
+### Test Senaryosu 2.3: Geçersiz Resim Yükleme
 **Amaç:** Geçersiz dosya formatlarının reddedildiğini doğrulamak
 
 **Adımlar:**
-1. TXT dosyası yüklemeye çalış
-2. Çok büyük dosya yüklemeye çalış (>16MB)
-3. Boş dosya yüklemeye çalış
+1. Geçersiz dosya formatı seç (TXT, PDF)
+2. Çok büyük dosya seç (>10MB)
+3. Boş dosya seç
 
 **Beklenen Sonuç:**
 - ❌ Hata mesajı görünmeli
 - ❌ Dosya yüklenmemeli
 
-### Test Senaryosu 2.3: Resim Silme
-**Amaç:** Yüklenen resmin silinebildiğini doğrulamak
-
-**Adımlar:**
-1. Yüklenen resmin yanındaki "Sil" butonuna tıkla
-2. Silme işlemini onayla
-
-**Beklenen Sonuç:**
-- ✅ Resim listeden kaldırılmalı
-- ✅ Sunucudan dosya silinmeli
-
-### Test Senaryosu 2.4: Çoklu Resim Yükleme
-**Amaç:** Birden fazla resmin yüklenebildiğini doğrulamak
-
-**Adımlar:**
-1. 5 farklı resim yükle
-2. Her resme farklı isim ver
-3. Tüm resimlerin listelendiğini kontrol et
-
-**Beklenen Sonuç:**
-- ✅ Tüm resimler başarıyla yüklenmeli
-- ✅ Resimler sırayla listelenmeli
-- ✅ Toplam resim sayısı doğru görünmeli
-
----
-
-## 🏆 Sprint 3: Turnuva Sistemi Testleri
-
-### Test Senaryosu 3.1: Turnuva Başlatma
-**Amaç:** Turnuvanın doğru şekilde başlatıldığını doğrulamak
+### Test Senaryosu 2.4: Turnuva Başlatma
+**Amaç:** Turnuvayı başlatmanın doğru çalıştığını doğrulamak
 
 **Adımlar:**
 1. En az 2 resim yükle
@@ -161,188 +156,270 @@ npm start
 
 **Beklenen Sonuç:**
 - ✅ Turnuva başlamalı
-- ✅ İlk maç görünmeli
-- ✅ Resim yükleme devre dışı kalmalı
+- ✅ İlk maç gösterilmeli
+- ✅ BOŞ resimler otomatik eklenmeli (2'nin kuvvetine tamamla)
 
-### Test Senaryosu 3.2: Yetersiz Resim ile Turnuva Başlatma
-**Amaç:** Tek resimle turnuva başlatmanın engellendiğini doğrulamak
+---
+
+## 🎯 Sprint 5: Kategori Sistemi ve ML Tahmin Testleri
+
+### Test Senaryosu 5.1: Kategori Seçimi
+**Amaç:** Turnuva oluşturma sırasında kategori seçiminin çalıştığını doğrulamak
 
 **Adımlar:**
-1. Sadece 1 resim yükle
-2. "Turnuvayı Başlat" butonuna tıkla
+1. Turnuva oluşturma sayfasında kategori seçiciyi aç
+2. "Anime/Manga" kategorisini seç
+3. Turnuva adını gir ve oluştur
+4. Resim yükleme sayfasına geç
 
 **Beklenen Sonuç:**
-- ❌ Hata mesajı görünmeli
-- ❌ Turnuva başlamamalı
+- ✅ Kategori seçici görünmeli
+- ✅ Seçilen kategori kaydedilmeli
+- ✅ Turnuva oluşturma formunda kategori alanı olmalı
 
-### Test Senaryosu 3.3: Maç Karşılaştırması
-**Amaç:** Maç karşılaştırma sisteminin çalıştığını doğrulamak
+### Test Senaryosu 5.2: ML Eşleşme Tahmini
+**Amaç:** ML modelinin eşleşme sayısını doğru tahmin ettiğini doğrulamak
+
+**Adımlar:**
+1. 8 resim yükle (farklı kategorilerden)
+2. "Tahmin Al" butonuna tıkla
+3. Tahmin sonucunu kontrol et
+
+**Beklenen Sonuç:**
+- ✅ Tahmin sonucu 4-15 arasında olmalı
+- ✅ Güvenilirlik skoru %70-95 arasında olmalı
+- ✅ Tahmin süresi < 5 saniye olmalı
+
+### Test Senaryosu 5.3: Kalan Maç Sayısı Göstergesi
+**Amaç:** Turnuva sırasında kalan maç sayısının doğru gösterildiğini doğrulamak
 
 **Adımlar:**
 1. Turnuvayı başlat
-2. İki resim arasından birini seç
-3. "Bu Resmi Seç" butonuna tıkla
+2. İlk maçı tamamla
+3. Kalan maç sayısını kontrol et
 
 **Beklenen Sonuç:**
-- ✅ Seçim kaydedilmeli
-- ✅ Sonraki maça geçilmeli
-- ✅ Puanlar güncellenmeli
+- ✅ Kalan maç sayısı doğru hesaplanmalı
+- ✅ Her maç sonrası güncellenmeli
+- ✅ Görsel gösterge (progress bar) olmalı
 
-### Test Senaryosu 3.4: Turnuva Tamamlama
-**Amaç:** Turnuvanın doğru şekilde tamamlandığını doğrulamak
+### Test Senaryosu 5.4: Kategori Bazlı Filtreleme
+**Amaç:** Public turnuvalarda kategori filtrelemenin çalıştığını doğrulamak
 
 **Adımlar:**
-1. Tüm maçları tamamla
-2. Final maçını oyna
+1. Public turnuvalar sayfasına git
+2. "Anime/Manga" kategorisi filtresini seç
+3. Sonuçları kontrol et
 
 **Beklenen Sonuç:**
-- ✅ Turnuva tamamlanmalı
-- ✅ Kazanan resim gösterilmeli
+- ✅ Sadece Anime/Manga kategorisindeki turnuvalar görünmeli
+- ✅ Filtre temizleme butonu çalışmalı
+- ✅ Birden fazla kategori seçimi yapılabilmeli
 
-### Test Senaryosu 3.5: Public Turnuvadan Katılım
-**Amaç:** Public turnuvadan katıldığında turnuvanın otomatik başladığını doğrulamak
+### Test Senaryosu 5.5: Benzerlik Analizi
+**Amaç:** Resim benzerlik analizinin doğru çalıştığını doğrulamak
 
 **Adımlar:**
-1. Dashboard'da "Public Turnuvalar" butonuna tıkla
-2. Mevcut bir public turnuvayı seç
-3. "Turnuvaya Katıl" butonuna tıkla
+1. Benzer resimler yükle (aynı kategoriden)
+2. Farklı resimler yükle (farklı kategorilerden)
+3. Benzerlik analizi sonuçlarını karşılaştır
 
 **Beklenen Sonuç:**
-- ✅ Turnuva otomatik olarak başlamalı
-- ✅ Resimler kopyalanmalı
-- ✅ İlk maç görünmeli (resim yükleme adımına yönlendirilmemeli)
-- ✅ Turnuva oyun adımında olmalı (step 1)
+- ✅ Benzer resimler yüksek benzerlik skoru almalı
+- ✅ Farklı resimler düşük benzerlik skoru almalı
+- ✅ Benzerlik skoru 0-1 arasında olmalı
 
-### Test Senaryosu 3.6: Public Turnuva Oluşturma
-**Amaç:** Tamamlanan turnuvayı public yapabildiğini doğrulamak
+### Test Senaryosu 5.6: Arama Sistemi
+**Amaç:** Kategori ve metin aramasının çalıştığını doğrulamak
 
 **Adımlar:**
-1. Bir turnuvayı tamamla
-2. "Evet, Public Yap" butonuna tıkla
-3. Turnuva ismini gir
-4. Onayla
+1. Public turnuvalar sayfasında arama kutusuna "anime" yaz
+2. "Nature" kategorisini seç
+3. Sonuçları kontrol et
 
 **Beklenen Sonuç:**
-- ✅ Turnuva public olmalı
-- ✅ Public turnuvalar listesinde görünmeli
-- ✅ Diğer kullanıcılar katılabilmeli
+- ✅ Hem metin hem kategori filtresi çalışmalı
+- ✅ Sonuçlar anında güncellenmeli
+- ✅ "Sonuç bulunamadı" mesajı görünmeli (uygun durumda)
 
 ---
 
-## 🔒 Güvenlik Testleri
+## 🔍 Sprint 6: Performans Testleri
 
-### Test Senaryosu S.1: Yetkisiz Erişim
-**Amaç:** Giriş yapmadan korumalı sayfalara erişimin engellendiğini doğrulamak
+### Test Senaryosu 6.1: Yüksek Yük Testi
+**Amaç:** Sistemin yüksek kullanıcı yükü altında çalıştığını doğrulamak
 
 **Adımlar:**
-1. Tarayıcıda `/dashboard` adresine git
-2. Token'ı localStorage'dan sil
-3. Sayfayı yenile
+1. 100+ resim yükle
+2. 16 resimlik turnuva oluştur
+3. Turnuvayı başlat ve tamamla
 
 **Beklenen Sonuç:**
-- ❌ Login sayfasına yönlendirilmeli
-- ❌ Dashboard'a erişim engellenmeli
+- ✅ Sistem yavaşlamamalı
+- ✅ Tüm işlemler tamamlanmalı
+- ✅ Memory leak olmamalı
 
-### Test Senaryosu S.2: Token Geçerliliği
-**Amaç:** Geçersiz token ile erişimin engellendiğini doğrulamak
+### Test Senaryosu 6.2: API Response Time
+**Amaç:** API yanıt sürelerinin kabul edilebilir olduğunu doğrulamak
 
 **Adımlar:**
-1. Geçersiz token localStorage'a ekle
-2. API istekleri yap
+1. API endpoint'lerini test et
+2. Response time'ları ölç
 
 **Beklenen Sonuç:**
-- ❌ 401 hatası alınmalı
-- ❌ Login sayfasına yönlendirilmeli
+- ✅ API yanıt süresi < 500ms olmalı
+- ✅ ML tahmin süresi < 5 saniye olmalı
+- ✅ Resim yükleme süresi < 30 saniye olmalı
 
-### Test Senaryosu S.3: Rate Limiting
-**Amaç:** API rate limiting'in çalıştığını doğrulamak
+### Test Senaryosu 6.3: Mobile Responsiveness
+**Amaç:** Mobil cihazlarda uygulamanın düzgün çalıştığını doğrulamak
 
 **Adımlar:**
-1. Çok hızlı ardışık istekler gönder
+1. Mobil tarayıcıda test et
+2. Farklı ekran boyutlarında test et
+3. Touch gesture'ları test et
+
+**Beklenen Sonuç:**
+- ✅ Responsive tasarım çalışmalı
+- ✅ Touch gesture'lar çalışmalı
+- ✅ Mobil performans kabul edilebilir olmalı
+
+---
+
+## 🛡️ Güvenlik Testleri
+
+### Test Senaryosu 7.1: Authentication
+**Amaç:** Kimlik doğrulama sisteminin güvenli olduğunu doğrulamak
+
+**Adımlar:**
+1. Geçersiz token ile API çağrısı yap
+2. Expired token ile API çağrısı yap
+3. Token olmadan API çağrısı yap
+
+**Beklenen Sonuç:**
+- ❌ 401 Unauthorized hatası alınmalı
+- ❌ API erişimi reddedilmeli
+
+### Test Senaryosu 7.2: Input Validation
+**Amaç:** Input validasyonlarının güvenli olduğunu doğrulamak
+
+**Adımlar:**
+1. SQL injection denemesi yap
+2. XSS denemesi yap
+3. File upload güvenlik testi yap
+
+**Beklenen Sonuç:**
+- ❌ Güvenlik açıkları olmamalı
+- ❌ Zararlı kod çalışmamalı
+- ❌ Dosya güvenliği sağlanmalı
+
+### Test Senaryosu 7.3: Rate Limiting
+**Amaç:** Rate limiting sisteminin çalıştığını doğrulamak
+
+**Adımlar:**
+1. Çok hızlı API çağrıları yap
 2. Rate limit aşımını test et
 
 **Beklenen Sonuç:**
-- ❌ Rate limit hatası alınmalı
-- ❌ İstekler geçici olarak engellenmeli
+- ❌ Rate limit aşıldığında 429 hatası alınmalı
+- ❌ API erişimi geçici olarak engellenmeli
 
 ---
 
-## 📱 UI/UX Testleri
+## 📱 Cross-Browser Testleri
 
-### Test Senaryosu U.1: Responsive Tasarım
-**Amaç:** Farklı ekran boyutlarında uygulamanın düzgün göründüğünü doğrulamak
-
+### Test Senaryosu 8.1: Chrome Testi
 **Adımlar:**
-1. Desktop'ta test et
-2. Tablet boyutunda test et
-3. Mobile boyutunda test et
+1. Chrome'da tüm özellikleri test et
+2. Developer tools ile performans kontrol et
 
-**Beklenen Sonuç:**
-- ✅ Tüm ekran boyutlarında düzgün görünmeli
-- ✅ Responsive tasarım çalışmalı
-
-### Test Senaryosu U.2: Loading States
-**Amaç:** Yükleme durumlarının doğru gösterildiğini doğrulamak
-
+### Test Senaryosu 8.2: Firefox Testi
 **Adımlar:**
-1. Yavaş internet bağlantısında test et
-2. Resim yükleme sırasında loading göster
-3. API istekleri sırasında loading göster
+1. Firefox'ta tüm özellikleri test et
+2. CSS ve JavaScript uyumluluğunu kontrol et
 
-**Beklenen Sonuç:**
-- ✅ Loading spinner'lar görünmeli
-- ✅ Kullanıcı geri bildirimi sağlanmalı
-
-### Test Senaryosu U.3: Error Handling
-**Amaç:** Hata durumlarının doğru şekilde gösterildiğini doğrulamak
-
+### Test Senaryosu 8.3: Safari Testi
 **Adımlar:**
-1. Network hatası simüle et
-2. Server hatası simüle et
-3. Validation hatası oluştur
-
-**Beklenen Sonuç:**
-- ✅ Hata mesajları görünmeli
-- ✅ Kullanıcı dostu mesajlar olmalı
+1. Safari'de tüm özellikleri test et
+2. WebKit uyumluluğunu kontrol et
 
 ---
 
-## 🧪 Otomatik Test Çalıştırma
+## 🧪 ML Model Testleri
 
-### Backend Testleri
-```bash
-cd miorai_backend
-python manage.py test users
-python manage.py test tournaments
-python manage.py test --verbosity=2
+### Test Senaryosu 9.1: Model Doğruluğu
+**Amaç:** ML modelinin tahmin doğruluğunu test etmek
+
+**Adımlar:**
+1. Bilinen sonuçlu turnuvalar oluştur
+2. Model tahminlerini gerçek sonuçlarla karşılaştır
+3. Doğruluk oranını hesapla
+
+**Beklenen Sonuç:**
+- ✅ Doğruluk oranı > %70 olmalı
+- ✅ Güvenilirlik skoru tutarlı olmalı
+
+### Test Senaryosu 9.2: Model Performansı
+**Amaç:** ML modelinin performansını test etmek
+
+**Adımlar:**
+1. Farklı resim sayılarıyla test et
+2. Farklı kategorilerle test et
+3. Response time'ları ölç
+
+**Beklenen Sonuç:**
+- ✅ Tüm durumlarda çalışmalı
+- ✅ Response time < 5 saniye olmalı
+- ✅ Memory kullanımı makul olmalı
+
+---
+
+## 📊 Test Raporlama
+
+### Test Sonuçları Formatı
+```json
+{
+  "test_scenario": "5.1 - Kategori Seçimi",
+  "status": "PASSED",
+  "execution_time": "2.5s",
+  "browser": "Chrome 120.0",
+  "device": "Desktop",
+  "notes": "Kategori seçimi başarıyla çalışıyor",
+  "screenshots": ["screenshot1.png", "screenshot2.png"]
+}
 ```
 
-### Frontend Testleri
+### Test Coverage Hedefleri
+- **Unit Tests**: %80+
+- **Integration Tests**: %70+
+- **E2E Tests**: %60+
+- **ML Model Tests**: %90+
+
+### Test Otomasyonu
+- **Backend**: pytest ile unit ve integration testleri
+- **Frontend**: Jest ve React Testing Library
+- **E2E**: Cypress ile end-to-end testleri
+- **ML**: Custom test suite ile model testleri
+
+---
+
+## 🚀 Test Çalıştırma Komutları
+
 ```bash
+# Backend testleri
+cd miorai_backend
+python manage.py test
+
+# Frontend testleri
 cd miorai_frontend
 npm test
-npm run test -- --coverage
+
+# E2E testleri
+npm run cypress:open
+
+# ML model testleri
+cd miorai_backend
+python -m pytest ml/tests/
 ```
 
----
-
-## 📊 Test Sonuçları Raporu
-
-### Test Çalıştırma Sonrası Kontrol Listesi:
-
-- [ ] Tüm backend testleri geçti mi?
-- [ ] Tüm frontend testleri geçti mi?
-- [ ] Manuel test senaryoları başarılı mı?
-- [ ] Güvenlik testleri geçti mi?
-- [ ] UI/UX testleri başarılı mı?
-- [ ] Performance testleri kabul edilebilir mi?
-
-### Hata Raporlama Formatı:
-```
-Test Senaryosu: [Senaryo Adı]
-Hata Açıklaması: [Detaylı hata açıklaması]
-Beklenen Davranış: [Ne olması gerekiyordu]
-Gerçekleşen Davranış: [Ne oldu]
-Adımlar: [Hata oluşturan adımlar]
-Öncelik: [Yüksek/Orta/Düşük]
-``` 
+Bu test senaryoları, Sprint 5'in yeni yaklaşımına uygun olarak güncellenmiştir ve ML eşleşme tahmini ile manuel kategori sistemi özelliklerini kapsamaktadır. 

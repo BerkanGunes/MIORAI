@@ -420,10 +420,31 @@ class PublicTournamentsListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Tournament.objects.filter(
+        queryset = Tournament.objects.filter(
             is_public=True,
             is_completed=True
-        ).order_by('-play_count', '-created_at')
+        )
+        
+        # Kategori filtresi
+        category = self.request.query_params.get('category', None)
+        if category:
+            queryset = queryset.filter(category=category)
+        
+        # Arama filtresi
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        
+        # Sıralama
+        sort_by = self.request.query_params.get('sort', 'popularity')
+        if sort_by == 'date':
+            queryset = queryset.order_by('-created_at')
+        elif sort_by == 'category':
+            queryset = queryset.order_by('category', '-play_count')
+        else:  # popularity (default)
+            queryset = queryset.order_by('-play_count', '-created_at')
+        
+        return queryset
 
 class MakeTournamentPublicView(APIView):
     """Turnuvayı public yap"""

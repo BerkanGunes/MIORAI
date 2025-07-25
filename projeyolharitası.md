@@ -90,36 +90,65 @@ Size bu projenin yol haritasını, mevcut mimari yapı ve akış diyagramına g�
   - Public yapma seçenekleri
   - Kullanıcı deneyimi iyileştirmeleri
 
-### 5. Makine Öğrenimi Entegrasyonu 🔄 DEVAM EDİYOR (2-3 hafta)
+### 5. Kategori Sistemi ve ML Eşleşme Tahmini 🔄 DEVAM EDİYOR (3-4 hafta)
 
-- **ML Modülü Geliştirme**
-  - `classifier.py`: Resim kategorilendirme modeli
-  - Model eğitimi ve test süreçleri
-  - API entegrasyonu
+- **Manuel Kategori Sistemi**
+  - Tournament modeline kategori alanı ekleme
+  - Turnuva oluşturma sırasında kategori seçimi
+  - Kategori bazlı filtreleme ve arama
+  - Public turnuvalarda kategori gösterimi
 
-### 6. Test ve Optimizasyon 📋 PLANLANIYOR (2 hafta)
+- **ML Eşleşme Sayısı Tahmini**
+  - `ml/predictor.py`: Eşleşme sayısı tahmin modeli
+  - Resim benzerlik analizi
+  - Turnuva karmaşıklık skoru hesaplama
+  - Tahmin doğruluğu ve güvenilirlik skoru
 
-- **Test Süreçleri**
-  - Birim testleri
-  - Entegrasyon testleri
-  - Kullanıcı arayüzü testleri
+- **Kullanıcı Arayüzü Güncellemeleri**
+  - Turnuva başlatma öncesi tahmin göstergesi
+  - Kategori seçici bileşeni
+  - Kalan maç sayısı göstergesi
+  - Benzerlik analizi görüntüleme
 
-- **Performans İyileştirmeleri**
-  - Backend optimizasyonu
-  - Frontend performans iyileştirmeleri
-  - Güvenlik testleri
+- **API Endpoints**
+  - `/api/tournaments/predict-matches/` - Eşleşme sayısı tahmini
+  - `/api/tournaments/remaining-matches/` - Kalan maç sayısı
+  - `/api/tournaments/categories/` - Kategori listesi
+  - `/api/tournaments/search/` - Kategori bazlı arama
 
-### 7. Dokümantasyon ve Dağıtım 📋 PLANLANIYOR (1 hafta)
+### 6. Performans İyileştirmeleri ve Optimizasyon 📋 PLANLANIYOR (2-3 hafta)
+
+- **Performans Optimizasyonları**
+  - Redis önbellekleme sistemi
+  - Database query optimizasyonu
+  - Resim işleme optimizasyonu
+  - API response time iyileştirmeleri
+
+- **Güvenlik İyileştirmeleri**
+  - ML model güvenliği
+  - Input sanitization geliştirmeleri
+  - Rate limiting optimizasyonu
+  - Güvenlik audit ve testleri
+
+- **Monitoring ve Logging**
+  - Sistem izleme araçları
+  - Error tracking sistemi
+  - Performance monitoring
+  - Log analizi ve raporlama
+
+### 7. Dokümantasyon ve Dağıtım 📋 PLANLANIYOR (2 hafta)
 
 - **Dokümantasyon**
-  - API dokümantasyonu
+  - API dokümantasyonu (Swagger/OpenAPI)
+  - ML model dokümantasyonu
   - Kurulum kılavuzu
-  - Kullanıcı kılavuzu
-
-- **Dağıtım Hazırlıkları**
   - Deployment yapılandırması
+
+- **Dağıtım**
   - CI/CD pipeline kurulumu
-  - Monitoring ve logging sistemleri
+  - Docker containerization
+  - Production environment setup
+  - Monitoring ve alerting sistemi
 
 ## Mevcut Proje Yapısı
 
@@ -140,6 +169,12 @@ miorai_backend/
 │   ├── views.py (Turnuva API'leri)
 │   ├── urls.py (Turnuva URL'leri)
 │   └── serializers.py
+├── ml/ (YENİ - Sprint 5)
+│   ├── predictor.py (Eşleşme sayısı tahmini)
+│   ├── similarity_analyzer.py (Resim benzerlik analizi)
+│   ├── models/ (Eğitilmiş modeller)
+│   ├── utils/ (Yardımcı fonksiyonlar)
+│   └── tests/ (ML testleri)
 └── media/
     └── tournament_images/ (Yüklenen resimler)
 ```
@@ -151,22 +186,67 @@ miorai_frontend/src/
 ├── components/
 │   ├── Navbar.tsx
 │   ├── ProtectedRoute.tsx
-│   └── tournament/
-│       ├── ImageTournament.tsx
-│       ├── ImageUpload.tsx
-│       └── ImageMatchCard.tsx
+│   ├── tournament/
+│   │   ├── ImageTournament.tsx
+│   │   ├── ImageUpload.tsx
+│   │   ├── ImageMatchCard.tsx
+│   │   └── CategorySelector.tsx (YENİ - Sprint 5)
+│   ├── prediction/ (YENİ - Sprint 5)
+│   │   ├── MatchPrediction.tsx
+│   │   ├── RemainingMatches.tsx
+│   │   └── SimilarityIndicator.tsx
+│   └── search/ (YENİ - Sprint 5)
+│       ├── TournamentSearch.tsx
+│       ├── CategoryFilter.tsx
+│       └── SearchResults.tsx
 ├── pages/
 │   ├── Dashboard.tsx
 │   ├── TournamentPage.tsx
-│   ├── PublicTournaments.tsx
+│   ├── PublicTournaments.tsx (Güncellenmiş)
 │   ├── Login.tsx
 │   └── Register.tsx
 ├── services/
 │   ├── auth.service.ts
-│   └── tournamentService.ts
+│   ├── tournamentService.ts
+│   └── predictionService.ts (YENİ - Sprint 5)
 └── contexts/
     └── AuthContext.tsx
 ```
+
+## Kategori Sistemi Detayları
+
+### Desteklenen Kategoriler
+1. **Anime/Manga** - Anime karakterleri, manga panelleri
+2. **Nature** - Doğa manzaraları, bitkiler, hayvanlar
+3. **Architecture** - Binalar, şehir manzaraları, yapılar
+4. **People** - Portreler, grup fotoğrafları
+5. **Animals** - Evcil hayvanlar, vahşi hayvanlar
+6. **Food** - Yemekler, içecekler, restoranlar
+7. **Art** - Resimler, heykeller, sanat eserleri
+8. **Technology** - Elektronik cihazlar, bilgisayarlar
+9. **Sports** - Spor aktiviteleri, oyunlar
+10. **General** - Genel kategoriler
+
+### ML Eşleşme Tahmin Sistemi
+
+#### Tahmin Özellikleri
+- **Resim Sayısı**: Temel faktör (2-16 resim)
+- **Resim Benzerliği**: Yüksek benzerlik = daha az transitive closure
+- **Resim Çeşitliliği**: Farklı kategoriler = daha fazla maç
+- **Tarihsel Veriler**: Benzer turnuvaların sonuçları
+
+#### Tahmin Çıktıları
+- **Tahmini Maç Sayısı**: 4-15 arası
+- **Güvenilirlik Skoru**: %70-95 arası
+- **Kalan Maç Sayısı**: Turnuva sırasında güncellenen
+- **Zorluk Seviyesi**: Kolay/Orta/Zor
+
+### Yeni API Endpoints (Sprint 5)
+- `/api/tournaments/predict-matches/` - Eşleşme sayısı tahmini
+- `/api/tournaments/remaining-matches/` - Kalan maç sayısı
+- `/api/tournaments/similarity-analysis/` - Resim benzerlik analizi
+- `/api/tournaments/categories/` - Kategori listesi
+- `/api/tournaments/search/` - Kategori ve arama filtreleme
 
 ## Öncelikler ve Dikkat Edilmesi Gerekenler:
 
@@ -175,25 +255,28 @@ miorai_frontend/src/
 3. **Resimlerin sunucuda güvenli saklanması** gerektiği unutulmamalı ✅
 4. **Turnuva algoritmasının doğruluğu** ve performansı sürekli test edilmeli ✅
 5. **Kod kalitesi** ve test coverage'ı yüksek tutulmalı ✅
+6. **ML model performansı** ve doğruluğu sürekli izlenmeli
+7. **Kullanıcı geri bildirimi** sistemi etkin çalışmalı
 
 ## Sonraki Adımlar
 
 ### Kısa Vadeli (1-2 hafta)
-1. **ML Entegrasyonu**: Resim kategorilendirme sistemi
-2. **Performans İyileştirmeleri**: Önbellek sistemi
-3. **Test Coverage**: Birim ve entegrasyon testleri
+1. **Kategori Sistemi**: Manuel kategori seçimi ve filtreleme
+2. **ML Tahmin Sistemi**: Eşleşme sayısı tahmini
+3. **Veritabanı Güncellemesi**: Kategori ve tahmin alanları ekleme
 
 ### Orta Vadeli (2-4 hafta)
+1. **Performans İyileştirmeleri**: Önbellek sistemi ve optimizasyonlar
+2. **Kullanıcı Arayüzü**: Tahmin göstergeleri ve kategori bileşenleri
+3. **Test Coverage**: ML modeli ve kategori sistemi testleri
+
+### Uzun Vadeli (1-2 ay)
 1. **Dokümantasyon**: API ve kullanıcı kılavuzları
 2. **Monitoring**: Sistem izleme ve loglama
 3. **Deployment**: Production ortamına geçiş
+4. **Model İyileştirme**: Kullanıcı geri bildirimi ile model güncelleme
 
-### Uzun Vadeli (1-2 ay)
-1. **Ölçeklenebilirlik**: Mikroservis mimarisine geçiş
-2. **Mobil Uygulama**: React Native ile mobil versiyon
-3. **Gelişmiş Özellikler**: AI destekli resim analizi
-
-Bu yol haritası yaklaşık 12-16 haftalık bir geliştirme sürecini kapsamaktadır. Mevcut durumda temel özellikler tamamlanmış olup, ML entegrasyonu ve optimizasyon aşamalarına geçilmiştir.
+Bu yol haritası yaklaşık 14-18 haftalık bir geliştirme sürecini kapsamaktadır. Mevcut durumda temel özellikler tamamlanmış olup, kategori sistemi ve ML tahmin entegrasyonu aşamalarına geçilmiştir.
 
 ---
 
@@ -208,10 +291,12 @@ Bu yol haritası yaklaşık 12-16 haftalık bir geliştirme sürecini kapsamakta
 - Güvenlik önlemleri
 
 🔄 **Devam Eden Özellikler:**
-- Makine öğrenimi entegrasyonu
-- Performans optimizasyonları
+- Manuel kategori sistemi
+- ML eşleşme sayısı tahmini
+- Kategori bazlı arama ve filtreleme
 
 📋 **Planlanan Özellikler:**
+- Performans optimizasyonları
 - Dokümantasyon
 - Deployment
 - Monitoring sistemi

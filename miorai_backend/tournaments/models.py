@@ -4,9 +4,24 @@ import json
 
 User = get_user_model()
 
+# Kategori seçenekleri
+CATEGORY_CHOICES = [
+    ('anime', 'Anime/Manga'),
+    ('nature', 'Nature'),
+    ('architecture', 'Architecture'),
+    ('people', 'People'),
+    ('animals', 'Animals'),
+    ('food', 'Food'),
+    ('art', 'Art'),
+    ('technology', 'Technology'),
+    ('sports', 'Sports'),
+    ('general', 'General'),
+]
+
 class Tournament(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tournaments')
     name = models.CharField(max_length=200, default='Resim Turnuvası')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)

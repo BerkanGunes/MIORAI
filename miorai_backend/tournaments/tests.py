@@ -124,21 +124,23 @@ class TournamentAPITest(APITestCase):
         
         self.create_tournament_url = reverse('tournament-create')
         self.tournament_detail_url = reverse('tournament-detail')
-        self.upload_image_url = reverse('image-upload')
+        self.upload_image_url = reverse('upload-image')
         self.start_tournament_url = reverse('start-tournament')
 
     def test_create_tournament(self):
         """Test turnuva oluşturma"""
-        data = {'name': 'Test Tournament'}
+        data = {'name': 'Test Tournament', 'category': 'general'}
         response = self.client.post(self.create_tournament_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'Test Tournament')
+        self.assertEqual(response.data['category'], 'general')
 
     def test_get_tournament_detail(self):
         """Test turnuva detaylarını alma"""
         tournament = Tournament.objects.create(
             user=self.user,
-            name='Test Tournament'
+            name='Test Tournament',
+            category='general'
         )
         response = self.client.get(self.tournament_detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -146,13 +148,13 @@ class TournamentAPITest(APITestCase):
 
     def test_upload_image(self):
         """Test resim yükleme"""
-        tournament = Tournament.objects.create(
-            user=self.user,
-            name='Test Tournament'
-        )
+        # Önce turnuva oluştur
+        tournament_data = {'name': 'Test Tournament', 'category': 'general'}
+        tournament_response = self.client.post(self.create_tournament_url, tournament_data)
+        self.assertEqual(tournament_response.status_code, status.HTTP_201_CREATED)
         
-        # Test resim dosyası oluştur
-        image_content = b'fake-image-content'
+        # Test resim dosyası oluştur (gerçek JPEG header'ı ile)
+        image_content = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x01\x01\x11\x00\x02\x11\x01\x03\x11\x01\xff\xc4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xff\xc4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00\xaa\xff\xd9'
         image_file = SimpleUploadedFile(
             'test.jpg',
             image_content,
@@ -164,6 +166,9 @@ class TournamentAPITest(APITestCase):
             'name': 'Test Image'
         }
         response = self.client.post(self.upload_image_url, data, format='multipart')
+        if response.status_code != status.HTTP_201_CREATED:
+            print(f"Response status: {response.status_code}")
+            print(f"Response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'Test Image')
 
@@ -171,7 +176,8 @@ class TournamentAPITest(APITestCase):
         """Test turnuva başlatma"""
         tournament = Tournament.objects.create(
             user=self.user,
-            name='Test Tournament'
+            name='Test Tournament',
+            category='general'
         )
         
         # En az 2 resim ekle
@@ -193,7 +199,8 @@ class TournamentAPITest(APITestCase):
         """Test yetersiz resim ile turnuva başlatma"""
         tournament = Tournament.objects.create(
             user=self.user,
-            name='Test Tournament'
+            name='Test Tournament',
+            category='general'
         )
         
         # Sadece 1 resim ekle
@@ -218,7 +225,8 @@ class MatchAPITest(APITestCase):
         
         self.tournament = Tournament.objects.create(
             user=self.user,
-            name='Test Tournament'
+            name='Test Tournament',
+            category='general'
         )
         
         # Test resimleri oluştur
@@ -241,8 +249,8 @@ class MatchAPITest(APITestCase):
             match_index=0
         )
         
-        self.submit_result_url = reverse('submit-match-result', kwargs={'match_id': self.match.id})
-        self.current_match_url = reverse('get-current-match')
+        self.submit_result_url = reverse('submit-result', kwargs={'match_id': self.match.id})
+        self.current_match_url = reverse('current-match')
 
     def test_submit_match_result(self):
         """Test maç sonucu gönderme"""
@@ -288,7 +296,8 @@ class UnauthorizedAccessTest(APITestCase):
         )
         self.tournament = Tournament.objects.create(
             user=self.user,
-            name='Test Tournament'
+            name='Test Tournament',
+            category='general'
         )
 
     def test_unauthorized_tournament_access(self):
@@ -308,5 +317,5 @@ class UnauthorizedAccessTest(APITestCase):
             'image': image_file,
             'name': 'Test Image'
         }
-        response = self.client.post(reverse('image-upload'), data, format='multipart')
+        response = self.client.post(reverse('upload-image'), data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

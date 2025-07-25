@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -23,15 +22,15 @@ import {
   useTheme,
 } from '@mui/material';
 import {
-  PhotoCamera,
   PlayArrow,
   EmojiEvents,
   RestartAlt,
 } from '@mui/icons-material';
-import { Tournament, Match, TournamentImage } from '../../types/tournament';
+import { Tournament, Match } from '../../types/tournament';
 import tournamentService from '../../services/tournamentService';
 import ImageUpload from './ImageUpload';
 import ImageMatchCard from './ImageMatchCard';
+import CategorySelector from './CategorySelector';
 
 const ImageTournament: React.FC = () => {
   const theme = useTheme();
@@ -48,10 +47,23 @@ const ImageTournament: React.FC = () => {
 
   // Tournament state
   const [step, setStep] = useState(0); // 0: Setup, 1: Playing, 2: Completed
+  
+  // Kategori state
+  const [selectedCategory, setSelectedCategory] = useState('general');
+
+  // Tahmin state
+  const [matchPrediction, setMatchPrediction] = useState<string | null>(null);
 
   useEffect(() => {
     initializeTournament();
-  }, []);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    if (tournament && step === 1) {
+      console.log('Tournament değişti, tahmin hesaplanıyor...');
+      calculateMatchPrediction();
+    }
+  }, [tournament, step]);
 
   const initializeTournament = async () => {
     try {
@@ -69,6 +81,8 @@ const ImageTournament: React.FC = () => {
           setStep(1);
           const match = await tournamentService.getCurrentMatch();
           setCurrentMatch(match);
+          // Turnuva zaten başlamışsa tahmin hesapla
+          await calculateMatchPrediction();
         } else {
           setStep(0);
         }
@@ -76,6 +90,7 @@ const ImageTournament: React.FC = () => {
         // Tournament yoksa yeni oluştur
         const newTournament = await tournamentService.createTournament({
           name: 'Resim Turnuvası',
+          category: selectedCategory,
         });
         setTournament(newTournament);
         setStep(0);
@@ -134,10 +149,69 @@ const ImageTournament: React.FC = () => {
       const match = await tournamentService.getCurrentMatch();
       setCurrentMatch(match);
       setStep(1);
+
+      // Tahmin hesapla
+      await calculateMatchPrediction();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Tournament başlatılamadı.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calculateMatchPrediction = async () => {
+    try {
+      console.log('calculateMatchPrediction çağrıldı');
+      console.log('Tournament state:', tournament);
+      
+      if (!tournament || !tournament.images) {
+        console.log('Tournament veya images yok');
+        return;
+      }
+      
+      const imageCount = tournament.images.filter(img => !img.name.startsWith('BOŞ_')).length;
+      console.log('Image count:', imageCount);
+      if (imageCount < 2) {
+        console.log('Image count 2\'den az');
+        return;
+      }
+
+      console.log('ML API çağrısı yapılıyor...');
+      console.log('Token:', localStorage.getItem('token'));
+      
+      // ML API'den tahmin al
+      const response = await fetch('http://localhost:8000/api/ml/predict-matches/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ n_images: imageCount }),
+      });
+
+      console.log('API response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('API response data:', data);
+        if (data.prediction && data.prediction.confidence_interval) {
+          const [lower, upper] = data.prediction.confidence_interval;
+          const estimated = data.prediction.estimated_matches;
+          
+          // Yuvarlama: küçük değer aşağı, büyük değer yukarı
+          const lowerBound = Math.floor(lower);
+          const upperBound = Math.ceil(upper);
+          
+          // Format: "tahmini maç sayısı~lowerboundmin-upperboundmax"
+          const predictionText = `${Math.round(estimated)}~${lowerBound}-${upperBound}`;
+          console.log('Prediction text:', predictionText);
+          setMatchPrediction(predictionText);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('API error:', response.status, response.statusText, errorText);
+      }
+    } catch (error) {
+      console.error('Tahmin hesaplama hatası:', error);
     }
   };
 
@@ -198,6 +272,7 @@ const ImageTournament: React.FC = () => {
       // Yeni tournament oluştur
       const newTournament = await tournamentService.createTournament({
         name: 'Resim Turnuvası',
+        category: selectedCategory,
       });
       setTournament(newTournament);
       setCurrentMatch(null);
@@ -217,6 +292,7 @@ const ImageTournament: React.FC = () => {
       // Yeni tournament oluştur
       const newTournament = await tournamentService.createTournament({
         name: 'Resim Turnuvası',
+        category: selectedCategory,
       });
       setTournament(newTournament);
       setCurrentMatch(null);
@@ -371,6 +447,16 @@ const ImageTournament: React.FC = () => {
               }}
             />
           </Box>
+
+          {/* Kategori Seçici */}
+          <CategorySelector
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            disabled={false}
+          />
+
+          {/* ML Tahmin Sistemi */}
+          {/* MatchPrediction component was removed */}
           <ImageUpload
             images={tournament.images || []}
             onUpload={handleImageUpload}
@@ -433,6 +519,9 @@ const ImageTournament: React.FC = () => {
       {/* Step 1: Playing Tournament */}
       {step === 1 && tournament && (
         <Box>
+          {/* Kalan Maç Sayısı Göstergesi */}
+          {/* RemainingMatches component was removed */}
+
           {/* Tournament Info */}
           <Paper 
             elevation={2} 
@@ -458,7 +547,7 @@ const ImageTournament: React.FC = () => {
                   Round {tournament.current_round}
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={3}>
                 <Typography 
                   variant="body1"
                   sx={{ 
@@ -480,6 +569,19 @@ const ImageTournament: React.FC = () => {
                   }}
                 >
                   Oynanan Maç: {tournament.matches?.filter(m => m.winner).length || 0}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Typography 
+                  variant="body1"
+                  sx={{ 
+                    color: theme.palette.secondary.main,
+                    fontFamily: 'Poppins, sans-serif',
+                    textShadow: `0 0 3px ${theme.palette.secondary.main}`,
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Tahmin: {matchPrediction || 'Hesaplanıyor...'}
                 </Typography>
               </Grid>
             </Grid>

@@ -21,6 +21,8 @@ export interface Match {
 export interface Tournament {
   id: number;
   name: string;
+  category: string;
+  category_display: string;
   created_at: string;
   updated_at: string;
   is_active: boolean;
@@ -34,6 +36,7 @@ export interface Tournament {
 
 export interface TournamentCreateData {
   name: string;
+  category: string;
 }
 
 export interface ImageUploadData {
