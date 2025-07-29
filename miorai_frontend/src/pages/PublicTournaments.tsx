@@ -22,6 +22,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { PlayArrow, Person, EmojiEvents, Search } from '@mui/icons-material';
 import tournamentService from '../services/tournamentService';
+import { getCategoryColor } from '../utils/categoryColors';
 
 interface PublicTournament {
   id: number;
@@ -449,10 +450,14 @@ const PublicTournaments: React.FC = () => {
                       label={tournament.category_display}
                       size="small"
                       sx={{
-                        backgroundColor: '#4CAF50',
+                        backgroundColor: getCategoryColor(tournament.category),
                         color: 'white',
                         fontFamily: 'Poppins, sans-serif',
                         fontWeight: 'bold',
+                        boxShadow: `0 0 8px ${getCategoryColor(tournament.category)}`,
+                        '&:hover': {
+                          boxShadow: `0 0 12px ${getCategoryColor(tournament.category)}`,
+                        },
                       }}
                     />
                     <Chip

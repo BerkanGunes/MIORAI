@@ -168,7 +168,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',  # Anonymous users
-        'user': '1000/day'  # Authenticated users
+        'user': '1000/day',  # Authenticated users
+        'tournament_match': '200/minute',  # Turnuva maç sonuçları için özel limit
+        'tournament_burst': '50/minute',   # Turnuva işlemleri için burst limit
+        'tournament_sustained': '500/hour' # Turnuva işlemleri için sürekli limit
     }
 }
 

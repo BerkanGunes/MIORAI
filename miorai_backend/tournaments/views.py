@@ -3,6 +3,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.throttling import UserRateThrottle
 from django.shortcuts import get_object_or_404
 from .models import Tournament, TournamentImage, Match
 from .serializers import (
@@ -12,19 +13,52 @@ from .serializers import (
 )
 import json
 import math
+import os
+
+# ML veri toplama için import
+from ml.match_predictor import MatchPredictor
+
+class TournamentMatchThrottle(UserRateThrottle):
+    """
+    Turnuva maç sonuçları için özel throttle sınıfı
+    - Dakikada 200 istek (normal kullanıcı davranışı için yeterli)
+    - Sadece maç sonucu gönderme işlemlerinde kullanılır
+    """
+    rate = '200/minute'
+    scope = 'tournament_match'
+
+class TournamentBurstThrottle(UserRateThrottle):
+    """
+    Turnuva işlemleri için burst throttle sınıfı
+    - Dakikada 50 istek (yoğun kullanım için)
+    - Turnuva başlatma, resim yükleme gibi işlemlerde kullanılır
+    """
+    rate = '50/minute'
+    scope = 'tournament_burst'
+
+class TournamentSustainedThrottle(UserRateThrottle):
+    """
+    Turnuva işlemleri için sürekli throttle sınıfı
+    - Saatte 500 istek (uzun süreli kullanım için)
+    - Genel turnuva işlemlerinde kullanılır
+    """
+    rate = '500/hour'
+    scope = 'tournament_sustained'
 
 class TournamentCreateView(generics.CreateAPIView):
     serializer_class = TournamentCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TournamentSustainedThrottle]  # Turnuva oluşturma için sustained throttle
     
     def perform_create(self, serializer):
         # Önce mevcut aktif turnuvaları pasif yap
         Tournament.objects.filter(user=self.request.user, is_active=True).update(is_active=False)
-        serializer.save(user=self.request.user)
+        tournament = serializer.save(user=self.request.user)
 
 class TournamentDetailView(generics.RetrieveAPIView, generics.UpdateAPIView):
     serializer_class = TournamentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TournamentSustainedThrottle]  # Turnuva detayları için sustained throttle
     
     def get_object(self):
         return get_object_or_404(Tournament, user=self.request.user, is_active=True)
@@ -32,6 +66,7 @@ class TournamentDetailView(generics.RetrieveAPIView, generics.UpdateAPIView):
 class ImageUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TournamentBurstThrottle]  # Resim yükleme için burst throttle
     
     def post(self, request):
         try:
@@ -120,6 +155,7 @@ class ImageUpdateNameView(APIView):
 
 class StartTournamentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TournamentBurstThrottle]  # Turnuva başlatma için burst throttle
     
     def post(self, request):
         tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
@@ -199,6 +235,7 @@ class StartTournamentView(APIView):
 
 class SubmitMatchResultView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TournamentMatchThrottle]  # Sadece maç sonuçları için özel throttle
     
     def post(self, request, match_id):
         tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
@@ -256,7 +293,6 @@ class SubmitMatchResultView(APIView):
             status=status.HTTP_200_OK
         )
     
-    # DÜZELTME: Fonksiyon tanımından önceki girinti eklendi
     def _update_win_matrix(self, tournament, winner, loser):
         images = list(tournament.images.all())
         try:
@@ -281,7 +317,6 @@ class SubmitMatchResultView(APIView):
             tournament.set_win_matrix(matrix)
             tournament.save()
     
-    # DÜZELTME: Fonksiyon tanımından önceki girinti eklendi
     def _create_next_round_matches(self, tournament):
         if tournament.is_completed:
             return
@@ -300,6 +335,9 @@ class SubmitMatchResultView(APIView):
         if not any(len(group) >= 2 for group in grouped.values()):
             tournament.is_completed = True
             tournament.save()
+            
+            # 🆕 TURNUVA TAMAMLANDIĞINDA ML VERİ SETİNE DAHİL ET
+            self._collect_tournament_data_for_ml(tournament)
             return
 
         updates = []  # (image, point_delta, round_delta)
@@ -358,7 +396,6 @@ class SubmitMatchResultView(APIView):
             tournament.save()
             self._create_next_round_matches(tournament)
     
-    # DÜZELTME: Fonksiyon tanımından önceki girinti eklendi
     def _get_previous_winner(self, tournament, image1, image2):
         matrix = tournament.get_win_matrix()
         images = list(tournament.images.all())
@@ -374,6 +411,71 @@ class SubmitMatchResultView(APIView):
         except (StopIteration, IndexError):
             pass
         return None
+    
+    def _collect_tournament_data_for_ml(self, tournament):
+        """
+        🆕 Turnuva tamamlandığında ML veri setine dahil et
+        """
+        try:
+            # Gerçek resim sayısını hesapla (BOŞ olmayan)
+            real_images = tournament.images.filter(
+                name__isnull=False
+            ).exclude(name__startswith='BOŞ_')
+            n_images = real_images.count()
+            
+            # Toplam maç sayısını hesapla
+            total_matches = tournament.matches.count()
+            
+            # Veri kaydı oluştur
+            tournament_data = {
+                'n_images': n_images,
+                'total_matches': total_matches,
+                'tournament_id': tournament.id,
+                'simulation_id': f"user_{tournament.user.id}_{tournament.id}",
+                'real_images': n_images,
+                'total_images_after_padding': tournament.images.count(),
+                'rounds_played': tournament.current_round,
+                'is_completed': tournament.is_completed,
+                'category': tournament.category,
+                'user_id': tournament.user.id,
+                'created_at': tournament.created_at.isoformat(),
+                'completed_at': tournament.updated_at.isoformat(),
+                'is_user_tournament': True  # Kullanıcı turnuvası olduğunu belirt
+            }
+            
+            # ML veri setini güncelle
+            self._update_ml_dataset(tournament_data)
+            
+            print(f"✅ Turnuva verisi ML setine eklendi: {n_images} resim, {total_matches} maç")
+            
+        except Exception as e:
+            print(f"❌ ML veri toplama hatası: {str(e)}")
+    
+    def _update_ml_dataset(self, tournament_data):
+        """
+        ML veri setini güncelle
+        """
+        try:
+            dataset_path = "ml/data/tournament_dataset_v1.json"
+            
+            # Mevcut veri setini oku
+            if os.path.exists(dataset_path):
+                with open(dataset_path, 'r', encoding='utf-8') as f:
+                    dataset = json.load(f)
+            else:
+                dataset = []
+            
+            # Yeni veriyi ekle
+            dataset.append(tournament_data)
+            
+            # Veri setini kaydet
+            with open(dataset_path, 'w', encoding='utf-8') as f:
+                json.dump(dataset, f, indent=2, ensure_ascii=False)
+            
+            print(f"📊 ML veri seti güncellendi. Toplam kayıt: {len(dataset)}")
+            
+        except Exception as e:
+            print(f"❌ Veri seti güncelleme hatası: {str(e)}")
 
 # ... (Diğer view'ler aynı) ...
     
@@ -395,24 +497,36 @@ class SubmitMatchResultView(APIView):
 
 class GetCurrentMatchView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TournamentSustainedThrottle]  # Mevcut maç sorgulama için sustained throttle
     
     def get(self, request):
-        tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
-        
-        if tournament.is_completed:
-            return Response({"completed": True})
-        
-        current_match = tournament.matches.filter(
-            round_number=tournament.current_round,
-            match_index=tournament.current_match_index,
-            winner__isnull=True
-        ).first()
-        
-        if current_match:
-            from .serializers import MatchSerializer
-            return Response(MatchSerializer(current_match, context={'request': request}).data)
-        
-        return Response({"no_match": True})
+        try:
+            tournament = get_object_or_404(Tournament, user=request.user, is_active=True)
+            
+            if tournament.is_completed:
+                return Response({"completed": True})
+            
+            current_matches = tournament.matches.filter(
+                round_number=tournament.current_round
+            ).order_by('match_index')
+            
+            if not current_matches.exists():
+                return Response({"no_match": True})
+            
+            if tournament.current_match_index >= current_matches.count():
+                return Response({"no_match": True})
+            
+            current_match = current_matches[tournament.current_match_index]
+            
+            return Response({
+                'id': current_match.id,
+                'image1': TournamentImageSerializer(current_match.image1, context={'request': request}).data,
+                'image2': TournamentImageSerializer(current_match.image2, context={'request': request}).data,
+                'round_number': current_match.round_number,
+                'match_index': current_match.match_index
+            })
+        except Tournament.DoesNotExist:
+            return Response({"error": "Aktif turnuva bulunamadı."}, status=status.HTTP_404_NOT_FOUND)
 
 class PublicTournamentsListView(generics.ListAPIView):
     """Public turnuvaları listele"""
@@ -424,6 +538,8 @@ class PublicTournamentsListView(generics.ListAPIView):
             is_public=True,
             is_completed=True
         )
+        
+
         
         # Kategori filtresi
         category = self.request.query_params.get('category', None)
@@ -461,6 +577,7 @@ class MakeTournamentPublicView(APIView):
         
         new_name = request.data.get('name', tournament.name)
         tournament.name = new_name
+        # Kategori bilgisini koru - sadece name değiştir
         tournament.is_public = True
         tournament.save()
         
@@ -484,6 +601,7 @@ class CreateTournamentFromPublicView(APIView):
         new_tournament = Tournament.objects.create(
             user=request.user,
             name=source_tournament.name,
+            category=source_tournament.category,  # Kategori bilgisini kopyala
             is_from_public=True
         )
         
@@ -592,3 +710,25 @@ class DeleteTournamentView(APIView):
             {"message": "Turnuva başarıyla silindi."},
             status=status.HTTP_200_OK
         )
+
+class DebugTournamentView(APIView):
+    """Debug: Turnuva bilgilerini göster"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        tournaments = Tournament.objects.filter(user=request.user).order_by('-created_at')
+        debug_data = []
+        
+        for tournament in tournaments:
+            debug_data.append({
+                'id': tournament.id,
+                'name': tournament.name,
+                'category': tournament.category,
+                'category_display': tournament.get_category_display(),
+                'is_public': tournament.is_public,
+                'is_completed': tournament.is_completed,
+                'is_active': tournament.is_active,
+                'created_at': tournament.created_at.isoformat(),
+            })
+        
+        return Response(debug_data, status=status.HTTP_200_OK)

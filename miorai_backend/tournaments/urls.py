@@ -14,4 +14,5 @@ urlpatterns = [
     path('make-public/', views.MakeTournamentPublicView.as_view(), name='make-public'),
     path('create-from-public/<int:tournament_id>/', views.CreateTournamentFromPublicView.as_view(), name='create-from-public'),
     path('delete/', views.DeleteTournamentView.as_view(), name='delete-tournament'),
+    path('debug/', views.DebugTournamentView.as_view(), name='debug-tournament'),
 ] 

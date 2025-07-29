@@ -107,45 +107,43 @@
   - Kullanıcı tercihleri paneli
   - Navigasyon sistemi
 
-## Sprint 5: Kategori Sistemi ve ML Eşleşme Tahmini 🔄 DEVAM EDİYOR
+## Sprint 5: Kategori Sistemi ve ML Eşleşme Tahmini ✅ TAMAMLANDI
 
-### Backend Hedefleri
+### Backend Hedefleri ✅
 
-- [ ] Manuel Kategori Sistemi
+- [x] Manuel Kategori Sistemi
   - Tournament modeline kategori alanı ekleme
   - Kategori seçenekleri (Anime, Nature, Architecture, vb.)
   - Kategori bazlı filtreleme API'si
   - Public turnuvalarda kategori gösterimi
-- [ ] ML Eşleşme Sayısı Tahmini
-  - `ml/predictor.py`: Eşleşme sayısı tahmin modeli
-  - Resim benzerlik analizi
+- [x] ML Eşleşme Sayısı Tahmini
+  - `ml/match_predictor.py`: Eşleşme sayısı tahmin modeli (Güven aralığı yaklaşımı)
   - Turnuva karmaşıklık skoru hesaplama
-  - Tahmin doğruluğu ve güvenilirlik skoru
-- [ ] Tahmin API'leri
+  - Tahmin doğruluğu ve güvenilirlik skoru (%95 güven aralığı)
+- [x] Tahmin API'leri
   - `PredictMatchesView`: Eşleşme sayısı tahmini
-  - `RemainingMatchesView`: Kalan maç sayısı
-  - `SimilarityAnalysisView`: Resim benzerlik analizi
-  - Asenkron tahmin sistemi ve önbellekleme
+  - `PredictMatchesWithSourceView`: Kaynak analizi ile tahmin
+  - `ModelStatusView`: Model durumu ve veri seti bilgileri
+  - Kullanıcı turnuva istatistikleri ve model doğruluğu analizi
 
-### Frontend Hedefleri
+### Frontend Hedefleri ✅
 
-- [ ] Kategori Sistemi
+- [x] Kategori Sistemi
   - `CategorySelector.tsx`: Kategori seçici bileşeni
   - Turnuva oluşturma formuna kategori seçici ekleme
-  - Kategori chip'leri ve etiketleri
+  - Kategori chip'leri ve etiketleri (tutarlı renk sistemi)
   - Kategori bazlı filtreleme arayüzü
-- [ ] ML Tahmin Göstergeleri
-  - `MatchPrediction.tsx`: Eşleşme sayısı tahmin göstergesi
-  - `RemainingMatches.tsx`: Kalan maç sayısı göstergesi
-  - `SimilarityIndicator.tsx`: Benzerlik analizi görüntüleme
+- [x] ML Tahmin Göstergeleri
+  - Eşleşme sayısı tahmin göstergesi (entegre)
   - Turnuva başlatma öncesi tahmin bilgisi
-- [ ] Public Tournaments Güncellemesi
+  - Model durumu ve veri seti bilgileri
+- [x] Public Tournaments Güncellemesi
   - Kategori bazlı filtreleme
-  - Arama çubuğu entegrasyonu
   - Kategori etiketleri görüntüleme
-  - Sıralama seçenekleri (popülerlik, tarih, kategori)
+  - Tutarlı kategori renkleri sistemi
+  - Arama ve filtreleme sistemi
 
-## Sprint 6: Performans İyileştirmeleri ve Optimizasyon 📋 PLANLANIYOR
+## Sprint 6: Performans İyileştirmeleri ve Optimizasyon 🔄 DEVAM EDİYOR
 
 ### Backend Hedefleri
 
@@ -238,12 +236,14 @@
 - `/api/tournaments/public/` - Public turnuvalar
 - `/api/tournaments/make-public/` - Public yapma
 
-### Yeni API Endpoints (Sprint 5)
-- `/api/tournaments/predict-matches/` - Eşleşme sayısı tahmini
-- `/api/tournaments/remaining-matches/` - Kalan maç sayısı
-- `/api/tournaments/similarity-analysis/` - Resim benzerlik analizi
-- `/api/tournaments/categories/` - Kategori listesi
-- `/api/tournaments/search/` - Kategori ve arama filtreleme
+### Yeni API Endpoints (Sprint 5) ✅
+- `/api/ml/predict-matches/` - Eşleşme sayısı tahmini
+- `/api/ml/predict-matches-with-source/` - Kaynak analizi ile tahmin
+- `/api/ml/model-status/` - Model durumu ve veri seti bilgileri
+- `/api/ml/categories/` - Kategori listesi
+- `/api/ml/user-tournament-stats/` - Kullanıcı turnuva istatistikleri
+- `/api/ml/dataset-comparison/` - Veri seti karşılaştırması
+- `/api/ml/model-accuracy/` - Model doğruluğu analizi
 
 ## Kategori Sistemi Detayları
 
@@ -262,16 +262,16 @@
 ### ML Eşleşme Tahmin Sistemi
 
 #### Tahmin Özellikleri
-- **Resim Sayısı**: Temel faktör (2-16 resim)
-- **Resim Benzerliği**: Yüksek benzerlik = daha az transitive closure
-- **Resim Çeşitliliği**: Farklı kategoriler = daha fazla maç
-- **Tarihsel Veriler**: Benzer turnuvaların sonuçları
+- **Resim Sayısı**: Temel faktör (2-128 resim)
+- **Güven Aralığı**: %95 güven aralığı ile tahmin
+- **Veri Tabanlı**: Simülasyon ve kullanıcı verileri
+- **Kaynak Analizi**: Simülasyon vs kullanıcı verileri karşılaştırması
 
 #### Tahmin Çıktıları
-- **Tahmini Maç Sayısı**: 4-15 arası
-- **Güvenilirlik Skoru**: %70-95 arası
-- **Kalan Maç Sayısı**: Turnuva sırasında güncellenen
-- **Zorluk Seviyesi**: Kolay/Orta/Zor
+- **Tahmini Maç Sayısı**: 1-100+ arası (resim sayısına göre)
+- **Güvenilirlik Skoru**: %95 güven aralığı
+- **Güven Aralığı**: Alt-üst sınırlar ile tahmin
+- **Kaynak Analizi**: Simülasyon vs kullanıcı verileri karşılaştırması
 
 ## Önemli Notlar
 

@@ -52,6 +52,104 @@ class MatchPredictor:
         
         return np.array(matches)
     
+    def get_matches_for_n_images_with_source(self, n_images: int) -> Dict:
+        """
+        Belirli bir resim sayısı için maç sayılarını kaynak bilgisiyle getir
+        
+        Args:
+            n_images: Resim sayısı
+            
+        Returns:
+            Dict: Simülasyon ve kullanıcı verileri ayrı ayrı
+        """
+        if self.dataset is None:
+            self.load_dataset()
+        
+        simulated_matches = []
+        user_matches = []
+        
+        for record in self.dataset:
+            if record['n_images'] == n_images:
+                if record.get('is_user_tournament', False):
+                    user_matches.append(record['total_matches'])
+                else:
+                    simulated_matches.append(record['total_matches'])
+        
+        return {
+            'simulated': np.array(simulated_matches),
+            'user': np.array(user_matches),
+            'total': np.array(simulated_matches + user_matches)
+        }
+    
+    def predict_matches_with_source_analysis(self, n_images: int) -> Dict:
+        """
+        Belirli bir resim sayısı için maç sayısı tahmini (kaynak analizi ile)
+        
+        Args:
+            n_images: Resim sayısı
+            
+        Returns:
+            Dict: Tahmin sonuçları ve kaynak analizi
+        """
+        try:
+            # Veri setini yükle
+            if self.dataset is None:
+                self.load_dataset()
+            
+            # Kaynak bazlı veri analizi
+            source_data = self.get_matches_for_n_images_with_source(n_images)
+            
+            if len(source_data['total']) == 0:
+                return {
+                    'error': f'{n_images} resim için veri bulunamadı',
+                    'n_images': n_images,
+                    'prediction': None
+                }
+            
+            # Genel tahmin (tüm veriler)
+            total_confidence_result = self.calculate_confidence_interval(source_data['total'])
+            
+            # Simülasyon tahmini
+            simulated_confidence_result = None
+            if len(source_data['simulated']) > 0:
+                simulated_confidence_result = self.calculate_confidence_interval(source_data['simulated'])
+            
+            # Kullanıcı tahmini
+            user_confidence_result = None
+            if len(source_data['user']) > 0:
+                user_confidence_result = self.calculate_confidence_interval(source_data['user'])
+            
+            # Sonuç formatını hazırla
+            result = {
+                'n_images': n_images,
+                'prediction': {
+                    'estimated_matches': total_confidence_result['mean'],
+                    'confidence_interval': total_confidence_result['confidence_interval'],
+                    'confidence_level': f"%{int(total_confidence_result['confidence_level'] * 100)}",
+                    'distribution': total_confidence_result['distribution'],
+                    'sample_size': total_confidence_result['sample_size'],
+                    'margin_of_error': total_confidence_result['margin_of_error'],
+                    'std_deviation': total_confidence_result['std']
+                },
+                'source_analysis': {
+                    'total_samples': len(source_data['total']),
+                    'simulated_samples': len(source_data['simulated']),
+                    'user_samples': len(source_data['user']),
+                    'simulated_prediction': simulated_confidence_result,
+                    'user_prediction': user_confidence_result
+                },
+                'message': f"Yaklaşık {total_confidence_result['mean']} maç oynanacak (%{int(total_confidence_result['confidence_level'] * 100)} güven aralığı: {total_confidence_result['confidence_interval'][0]}-{total_confidence_result['confidence_interval'][1]})"
+            }
+            
+            return result
+            
+        except Exception as e:
+            return {
+                'error': f'Tahmin hatası: {str(e)}',
+                'n_images': n_images,
+                'prediction': None
+            }
+    
     def calculate_confidence_interval(self, data: np.ndarray) -> Dict:
         """
         Güven aralığı hesapla

@@ -10,6 +10,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { tournamentService } from '../../services/tournamentService';
+import { getCategoryColor } from '../../utils/categoryColors';
 
 interface Category {
   value: string;
@@ -59,21 +60,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     fetchCategories();
   }, []);
 
-  const getCategoryColor = (categoryValue: string) => {
-    const colors = {
-      anime: '#FF6B9D',
-      nature: '#4CAF50',
-      architecture: '#2196F3',
-      people: '#FF9800',
-      animals: '#795548',
-      food: '#E91E63',
-      art: '#9C27B0',
-      technology: '#607D8B',
-      sports: '#F44336',
-      general: '#757575',
-    };
-    return colors[categoryValue as keyof typeof colors] || '#757575';
-  };
+
 
   if (loading) {
     return (
@@ -169,6 +156,9 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               fontFamily: 'Poppins, sans-serif',
               fontWeight: 'bold',
               boxShadow: `0 0 10px ${getCategoryColor(selectedCategory)}`,
+              '&:hover': {
+                boxShadow: `0 0 15px ${getCategoryColor(selectedCategory)}`,
+              },
             }}
           />
           <Typography 

@@ -90,33 +90,32 @@ Size bu projenin yol haritasını, mevcut mimari yapı ve akış diyagramına g�
   - Public yapma seçenekleri
   - Kullanıcı deneyimi iyileştirmeleri
 
-### 5. Kategori Sistemi ve ML Eşleşme Tahmini 🔄 DEVAM EDİYOR (3-4 hafta)
+### 5. Kategori Sistemi ve ML Eşleşme Tahmini ✅ TAMAMLANDI (3-4 hafta)
 
-- **Manuel Kategori Sistemi**
+- **Manuel Kategori Sistemi** ✅
   - Tournament modeline kategori alanı ekleme
   - Turnuva oluşturma sırasında kategori seçimi
   - Kategori bazlı filtreleme ve arama
   - Public turnuvalarda kategori gösterimi
 
-- **ML Eşleşme Sayısı Tahmini**
-  - `ml/predictor.py`: Eşleşme sayısı tahmin modeli
-  - Resim benzerlik analizi
+- **ML Eşleşme Sayısı Tahmini** ✅
+  - `ml/match_predictor.py`: Eşleşme sayısı tahmin modeli (Güven aralığı yaklaşımı)
   - Turnuva karmaşıklık skoru hesaplama
-  - Tahmin doğruluğu ve güvenilirlik skoru
+  - Tahmin doğruluğu ve güvenilirlik skoru (%95 güven aralığı)
 
-- **Kullanıcı Arayüzü Güncellemeleri**
+- **Kullanıcı Arayüzü Güncellemeleri** ✅
   - Turnuva başlatma öncesi tahmin göstergesi
   - Kategori seçici bileşeni
-  - Kalan maç sayısı göstergesi
-  - Benzerlik analizi görüntüleme
+  - Tutarlı kategori renkleri sistemi
+  - Arama ve filtreleme sistemi
 
-- **API Endpoints**
-  - `/api/tournaments/predict-matches/` - Eşleşme sayısı tahmini
-  - `/api/tournaments/remaining-matches/` - Kalan maç sayısı
-  - `/api/tournaments/categories/` - Kategori listesi
-  - `/api/tournaments/search/` - Kategori bazlı arama
+- **API Endpoints** ✅
+  - `/api/ml/predict-matches/` - Eşleşme sayısı tahmini
+  - `/api/ml/predict-matches-with-source/` - Kaynak analizi ile tahmin
+  - `/api/ml/categories/` - Kategori listesi
+  - `/api/ml/model-status/` - Model durumu ve veri seti bilgileri
 
-### 6. Performans İyileştirmeleri ve Optimizasyon 📋 PLANLANIYOR (2-3 hafta)
+### 6. Performans İyileştirmeleri ve Optimizasyon 🔄 DEVAM EDİYOR (2-3 hafta)
 
 - **Performans Optimizasyonları**
   - Redis önbellekleme sistemi
@@ -230,23 +229,25 @@ miorai_frontend/src/
 ### ML Eşleşme Tahmin Sistemi
 
 #### Tahmin Özellikleri
-- **Resim Sayısı**: Temel faktör (2-16 resim)
-- **Resim Benzerliği**: Yüksek benzerlik = daha az transitive closure
-- **Resim Çeşitliliği**: Farklı kategoriler = daha fazla maç
-- **Tarihsel Veriler**: Benzer turnuvaların sonuçları
+- **Resim Sayısı**: Temel faktör (2-128 resim)
+- **Güven Aralığı**: %95 güven aralığı ile tahmin
+- **Veri Tabanlı**: Simülasyon ve kullanıcı verileri
+- **Kaynak Analizi**: Simülasyon vs kullanıcı verileri karşılaştırması
 
 #### Tahmin Çıktıları
-- **Tahmini Maç Sayısı**: 4-15 arası
-- **Güvenilirlik Skoru**: %70-95 arası
-- **Kalan Maç Sayısı**: Turnuva sırasında güncellenen
-- **Zorluk Seviyesi**: Kolay/Orta/Zor
+- **Tahmini Maç Sayısı**: 1-100+ arası (resim sayısına göre)
+- **Güvenilirlik Skoru**: %95 güven aralığı
+- **Güven Aralığı**: Alt-üst sınırlar ile tahmin
+- **Kaynak Analizi**: Simülasyon vs kullanıcı verileri karşılaştırması
 
-### Yeni API Endpoints (Sprint 5)
-- `/api/tournaments/predict-matches/` - Eşleşme sayısı tahmini
-- `/api/tournaments/remaining-matches/` - Kalan maç sayısı
-- `/api/tournaments/similarity-analysis/` - Resim benzerlik analizi
-- `/api/tournaments/categories/` - Kategori listesi
-- `/api/tournaments/search/` - Kategori ve arama filtreleme
+### Yeni API Endpoints (Sprint 5) ✅
+- `/api/ml/predict-matches/` - Eşleşme sayısı tahmini
+- `/api/ml/predict-matches-with-source/` - Kaynak analizi ile tahmin
+- `/api/ml/categories/` - Kategori listesi
+- `/api/ml/model-status/` - Model durumu ve veri seti bilgileri
+- `/api/ml/user-tournament-stats/` - Kullanıcı turnuva istatistikleri
+- `/api/ml/dataset-comparison/` - Veri seti karşılaştırması
+- `/api/ml/model-accuracy/` - Model doğruluğu analizi
 
 ## Öncelikler ve Dikkat Edilmesi Gerekenler:
 
@@ -260,14 +261,14 @@ miorai_frontend/src/
 
 ## Sonraki Adımlar
 
-### Kısa Vadeli (1-2 hafta)
-1. **Kategori Sistemi**: Manuel kategori seçimi ve filtreleme
-2. **ML Tahmin Sistemi**: Eşleşme sayısı tahmini
-3. **Veritabanı Güncellemesi**: Kategori ve tahmin alanları ekleme
+### Kısa Vadeli (1-2 hafta) ✅ TAMAMLANDI
+1. **Kategori Sistemi**: Manuel kategori seçimi ve filtreleme ✅
+2. **ML Tahmin Sistemi**: Eşleşme sayısı tahmini ✅
+3. **Veritabanı Güncellemesi**: Kategori ve tahmin alanları ekleme ✅
 
-### Orta Vadeli (2-4 hafta)
+### Orta Vadeli (2-4 hafta) 🔄 DEVAM EDİYOR
 1. **Performans İyileştirmeleri**: Önbellek sistemi ve optimizasyonlar
-2. **Kullanıcı Arayüzü**: Tahmin göstergeleri ve kategori bileşenleri
+2. **Kullanıcı Arayüzü**: Loading state optimizasyonları
 3. **Test Coverage**: ML modeli ve kategori sistemi testleri
 
 ### Uzun Vadeli (1-2 ay)
@@ -291,9 +292,9 @@ Bu yol haritası yaklaşık 14-18 haftalık bir geliştirme sürecini kapsamakta
 - Güvenlik önlemleri
 
 🔄 **Devam Eden Özellikler:**
-- Manuel kategori sistemi
-- ML eşleşme sayısı tahmini
-- Kategori bazlı arama ve filtreleme
+- Performans optimizasyonları
+- Loading state iyileştirmeleri
+- Test coverage artırma
 
 📋 **Planlanan Özellikler:**
 - Performans optimizasyonları

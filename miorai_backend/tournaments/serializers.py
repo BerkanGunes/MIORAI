@@ -84,8 +84,4 @@ class MatchPredictionSerializer(serializers.Serializer):
     message = serializers.CharField(allow_null=True, required=False)
     error = serializers.CharField(allow_null=True, required=False)
 
-class SimilarityAnalysisSerializer(serializers.Serializer):
-    """Benzerlik analizi için serializer"""
-    similarity_score = serializers.FloatField()
-    similarity_level = serializers.CharField()
-    analysis_note = serializers.CharField() 
+ 

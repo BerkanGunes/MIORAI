@@ -36,6 +36,26 @@ mlApi.interceptors.request.use((config) => {
   return config;
 });
 
+// 429 hataları için basit retry mekanizması
+async function retryOn429<T>(apiCall: () => Promise<T>, maxRetries: number = 2): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await apiCall();
+    } catch (error: any) {
+      if (error.response?.status === 429 && attempt < maxRetries) {
+        // Rate limiting hatası - kısa bekleme sonra tekrar dene
+        const retryAfter = error.response.headers['retry-after'] || 1;
+        console.warn(`Rate limiting hatası (deneme ${attempt}/${maxRetries}), ${retryAfter}s sonra tekrar deneniyor...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+      } else {
+        // Diğer hatalar veya son deneme başarısız
+        throw error;
+      }
+    }
+  }
+  throw new Error('Maksimum deneme sayısı aşıldı');
+}
+
 export const tournamentService = {
   // Tournament oluştur
   async createTournament(data: TournamentCreateData): Promise<Tournament> {
@@ -80,12 +100,13 @@ export const tournamentService = {
     return response.data;
   },
 
-  // Maç sonucunu gönder
+  // Maç sonucunu gönder - 429 hataları için retry
   async submitMatchResult(matchId: number, winnerId: number): Promise<Tournament> {
-    const response = await tournamentApi.post(`/submit-result/${matchId}/`, {
-      winner_id: winnerId,
-    });
-    return response.data;
+    return retryOn429(() => 
+      tournamentApi.post(`/submit-result/${matchId}/`, {
+        winner_id: winnerId,
+      }).then(res => res.data)
+    );
   },
 
   // Mevcut maçı getir
@@ -128,6 +149,11 @@ export const tournamentService = {
     await tournamentApi.patch('/detail/', { name });
   },
 
+  // Aktif turnuvanın kategorisini güncelle
+  async updateTournamentCategory(category: string): Promise<void> {
+    await tournamentApi.patch('/detail/', { category });
+  },
+
   // ML API metodları
   // Kategorileri getir
   async getCategories(): Promise<any[]> {
@@ -135,11 +161,7 @@ export const tournamentService = {
     return response.data;
   },
 
-  // Benzerlik analizi
-  async getSimilarityAnalysis(): Promise<any> {
-    const response = await mlApi.post('/similarity-analysis/');
-    return response.data;
-  },
+
 
   // Model durumu
   async getModelStatus(): Promise<any> {

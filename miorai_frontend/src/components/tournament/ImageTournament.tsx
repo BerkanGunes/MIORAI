@@ -74,6 +74,8 @@ const ImageTournament: React.FC = () => {
       try {
         const existingTournament = await tournamentService.getTournament();
         setTournament(existingTournament);
+        // Mevcut turnuvanın kategorisini state'e set et
+        setSelectedCategory(existingTournament.category);
         
         if (existingTournament.is_completed) {
           setStep(2);
@@ -129,6 +131,22 @@ const ImageTournament: React.FC = () => {
       setTournament(updatedTournament);
     } catch (err: any) {
       throw err;
+    }
+  };
+
+  const handleCategoryChange = async (category: string) => {
+    try {
+      setSelectedCategory(category);
+      // Backend'e kategori güncellemesi gönder
+      if (tournament) {
+        await tournamentService.updateTournamentCategory(category);
+        const updatedTournament = await tournamentService.getTournament();
+        setTournament(updatedTournament);
+      }
+    } catch (err: any) {
+      console.error('Kategori güncelleme hatası:', err);
+      // Hata durumunda eski kategoriye geri dön
+      setSelectedCategory(tournament?.category || 'general');
     }
   };
 
@@ -451,7 +469,7 @@ const ImageTournament: React.FC = () => {
           {/* Kategori Seçici */}
           <CategorySelector
             selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
+            onCategoryChange={handleCategoryChange}
             disabled={false}
           />
 
