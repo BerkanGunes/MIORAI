@@ -18,6 +18,11 @@ import os
 # ML veri toplama için import
 from ml.match_predictor import MatchPredictor
 
+# Performance monitoring ve cache imports
+from core.monitoring import monitor_performance, monitor_api_performance
+from core.cache import tournament_cache, cache_result, invalidate_cache_pattern
+from core.monitoring import log_user_action, log_error
+
 class TournamentMatchThrottle(UserRateThrottle):
     """
     Turnuva maç sonuçları için özel throttle sınıfı
@@ -50,15 +55,51 @@ class TournamentCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [TournamentSustainedThrottle]  # Turnuva oluşturma için sustained throttle
     
+    @monitor_api_performance
+    def create(self, request, *args, **kwargs):
+        try:
+            response = super().create(request, *args, **kwargs)
+            # Log user action
+            log_user_action(request.user.id, 'tournament_created', {
+                'tournament_id': response.data.get('id'),
+                'category': response.data.get('category')
+            })
+            return response
+        except Exception as e:
+            log_error(e, {'user_id': request.user.id, 'action': 'tournament_create'})
+            raise
+    
     def perform_create(self, serializer):
         # Önce mevcut aktif turnuvaları pasif yap
         Tournament.objects.filter(user=self.request.user, is_active=True).update(is_active=False)
         tournament = serializer.save(user=self.request.user)
+        
+        # Invalidate user cache
+        tournament_cache.invalidate_tournament_cache(tournament.id)
 
 class TournamentDetailView(generics.RetrieveAPIView, generics.UpdateAPIView):
     serializer_class = TournamentSerializer
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [TournamentSustainedThrottle]  # Turnuva detayları için sustained throttle
+    
+    @monitor_api_performance
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            # Try to get from cache first
+            tournament = self.get_object()
+            cached_data = tournament_cache.get_cached_tournament_data(tournament.id)
+            
+            if cached_data:
+                return Response(cached_data)
+            
+            # If not in cache, get from database and cache it
+            response = super().retrieve(request, *args, **kwargs)
+            tournament_cache.cache_tournament_data(tournament.id, response.data)
+            
+            return response
+        except Exception as e:
+            log_error(e, {'user_id': request.user.id, 'action': 'tournament_detail'})
+            raise
     
     def get_object(self):
         return get_object_or_404(Tournament, user=self.request.user, is_active=True)
@@ -532,6 +573,28 @@ class PublicTournamentsListView(generics.ListAPIView):
     """Public turnuvaları listele"""
     serializer_class = PublicTournamentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @monitor_api_performance
+    def list(self, request, *args, **kwargs):
+        try:
+            # Get category filter from query params
+            category = request.query_params.get('category')
+            
+            # Try to get from cache first
+            cache_key = tournament_cache.get_public_tournaments_key(category)
+            cached_data = tournament_cache.cache_manager.get(cache_key)
+            
+            if cached_data:
+                return Response(cached_data)
+            
+            # If not in cache, get from database and cache it
+            response = super().list(request, *args, **kwargs)
+            tournament_cache.cache_manager.set(cache_key, response.data, timeout=900)  # 15 minutes
+            
+            return response
+        except Exception as e:
+            log_error(e, {'user_id': request.user.id, 'action': 'public_tournaments_list'})
+            raise
     
     def get_queryset(self):
         queryset = Tournament.objects.filter(

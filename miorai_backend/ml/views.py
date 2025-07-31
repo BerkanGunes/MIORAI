@@ -16,6 +16,11 @@ from .match_predictor import MatchPredictor
 import os
 import json
 
+# Performance monitoring ve cache imports
+from core.monitoring import monitor_performance, monitor_api_performance
+from core.cache import ml_cache, cache_result, invalidate_cache_pattern
+from core.monitoring import log_user_action, log_error
+
 class CategoriesView(APIView):
     """Kategori listesi endpoint'i"""
     permission_classes = [IsAuthenticated]
@@ -32,15 +37,26 @@ class PredictMatchesView(APIView):
     """Eşleşme sayısı tahmini endpoint'i - Güven aralığı yaklaşımı"""
     permission_classes = [IsAuthenticated]
     
+    @monitor_api_performance
     def post(self, request):
         try:
             n_images = request.data.get('n_images')
+            category = request.data.get('category')
             
             if not n_images or not isinstance(n_images, int) or n_images < 2:
                 return Response(
                     {"error": "Geçersiz bir resim sayısı gerekli (minimum 2)"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            
+            # Try to get from cache first
+            cached_prediction = ml_cache.get_cached_prediction(n_images, category)
+            if cached_prediction:
+                log_user_action(request.user.id, 'ml_prediction_cache_hit', {
+                    'n_images': n_images,
+                    'category': category
+                })
+                return Response(cached_prediction)
             
             # Güven aralığı tahmin modelini kullan
             predictor = MatchPredictor()
@@ -54,10 +70,26 @@ class PredictMatchesView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            # Cache the prediction
+            ml_cache.cache_prediction(n_images, prediction, category)
+            
+            # Log user action
+            log_user_action(request.user.id, 'ml_prediction', {
+                'n_images': n_images,
+                'category': category,
+                'predicted_matches': prediction.get('predicted_matches', 0)
+            })
+            
             serializer = MatchPredictionSerializer(prediction)
             return Response(serializer.data)
             
         except Exception as e:
+            log_error(e, {
+                'user_id': request.user.id, 
+                'action': 'ml_prediction',
+                'n_images': n_images,
+                'category': category
+            })
             return Response(
                 {"error": f"Tahmin hatası: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -103,7 +135,30 @@ class ModelStatusView(APIView):
     """ML model durumu endpoint'i"""
     permission_classes = [IsAuthenticated]
     
+    @monitor_api_performance
     def get(self, request):
+        try:
+            # Try to get from cache first
+            cache_key = ml_cache.get_model_status_key()
+            cached_status = ml_cache.cache_manager.get(cache_key)
+            
+            if cached_status:
+                return Response(cached_status)
+            
+            # If not in cache, get model status and cache it
+            predictor = MatchPredictor()
+            model_status = predictor.get_model_status()
+            
+            # Cache the status for 1 hour
+            ml_cache.cache_manager.set(cache_key, model_status, timeout=3600)
+            
+            return Response(model_status)
+        except Exception as e:
+            log_error(e, {'user_id': request.user.id, 'action': 'model_status'})
+            return Response(
+                {"error": f"Model durumu hatası: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         try:
             predictor = MatchPredictor()
             

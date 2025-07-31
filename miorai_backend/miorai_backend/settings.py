@@ -67,6 +67,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.monitoring.PerformanceMonitoringMiddleware',  # Performance monitoring
 ]
 
 ROOT_URLCONF = 'miorai_backend.urls'
@@ -202,3 +203,162 @@ RATELIMIT_USE_CACHE = 'default'
 RATELIMIT_KEY_PREFIX = 'ratelimit'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Redis Cache Configuration (Fallback to default cache if Redis not available)
+try:
+    import redis
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_CLASS': 'redis.connection.BlockingConnectionPool',
+                'CONNECTION_POOL_CLASS_KWARGS': {
+                    'max_connections': 50,
+                    'timeout': 20,
+                },
+                'MAX_CONNECTIONS': 1000,
+                'RETRY_ON_TIMEOUT': True,
+            },
+            'KEY_PREFIX': 'miorai',
+            'TIMEOUT': 300,  # 5 minutes default timeout
+        },
+        'session': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/2'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'session',
+            'TIMEOUT': 86400,  # 24 hours for sessions
+        },
+        'ml_predictions': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/3'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'ml_pred',
+            'TIMEOUT': 3600,  # 1 hour for ML predictions
+        }
+    }
+except ImportError:
+    # Fallback to default Django cache
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+            'TIMEOUT': 300,
+        }
+    }
+
+# Use Redis for session storage
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'session'
+
+# Cacheops configuration for database query caching
+CACHEOPS_REDIS = {
+    'host': os.environ.get('REDIS_HOST', '127.0.0.1'),
+    'port': int(os.environ.get('REDIS_PORT', 6379)),
+    'db': int(os.environ.get('REDIS_DB', 0)),
+    'socket_timeout': 3,
+}
+
+CACHEOPS_DEFAULTS = {
+    'timeout': 60 * 15,  # 15 minutes
+}
+
+CACHEOPS = {
+    'tournaments.Tournament': {'ops': 'all', 'timeout': 60 * 30},  # 30 minutes
+    'tournaments.TournamentImage': {'ops': 'all', 'timeout': 60 * 30},
+    'tournaments.Match': {'ops': 'all', 'timeout': 60 * 10},  # 10 minutes
+    'users.User': {'ops': 'all', 'timeout': 60 * 60},  # 1 hour
+}
+
+# Monitoring and Logging Configuration
+if DEBUG:
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INTERNAL_IPS = ['127.0.0.1', 'localhost']
+
+# Sentry Configuration for Error Tracking
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn=os.environ.get('SENTRY_DSN', ''),
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=1.0 if DEBUG else 0.1,
+    send_default_pii=True,
+)
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'miorai': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'ml': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# Performance Monitoring
+PERFORMANCE_MONITORING = {
+    'ENABLED': not DEBUG,
+    'SLOW_QUERY_THRESHOLD': 1.0,  # seconds
+    'API_RESPONSE_TIME_THRESHOLD': 0.5,  # seconds
+    'CACHE_HIT_RATIO_THRESHOLD': 0.8,  # 80%
+}
+
+# Database Query Optimization
+DATABASE_OPTIMIZATION = {
+    'QUERY_TIMEOUT': 30,  # seconds
+    'MAX_CONNECTIONS': 20,
+    'CONNECTION_MAX_AGE': 600,  # 10 minutes
+}
+
+# Update database settings with optimization
+DATABASES['default']['OPTIONS'] = {
+    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    'charset': 'utf8mb4',
+    'connect_timeout': 10,
+    'read_timeout': 30,
+    'write_timeout': 30,
+}

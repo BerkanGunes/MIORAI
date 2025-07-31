@@ -24,7 +24,9 @@ urlpatterns = [
     path('api/auth/', include('users.urls')),
     path('api/tournaments/', include('tournaments.urls')),
     path('api/ml/', include('ml.urls')),
+    path('api/core/', include('core.urls')),  # Core monitoring endpoints
 ]
 
+# Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
