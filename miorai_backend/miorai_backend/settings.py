@@ -205,76 +205,101 @@ RATELIMIT_KEY_PREFIX = 'ratelimit'
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Redis Cache Configuration (Fallback to default cache if Redis not available)
-try:
-    import redis
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'CONNECTION_POOL_CLASS': 'redis.connection.BlockingConnectionPool',
-                'CONNECTION_POOL_CLASS_KWARGS': {
-                    'max_connections': 50,
-                    'timeout': 20,
+def get_cache_config():
+    try:
+        import redis
+        # Test Redis connection
+        r = redis.Redis(host='127.0.0.1', port=6379, db=0, socket_timeout=3)
+        r.ping()
+        r.close()
+        
+        return {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'CONNECTION_POOL_CLASS': 'redis.connection.BlockingConnectionPool',
+                    'CONNECTION_POOL_CLASS_KWARGS': {
+                        'max_connections': 50,
+                        'timeout': 20,
+                    },
+                    'MAX_CONNECTIONS': 1000,
+                    'RETRY_ON_TIMEOUT': True,
                 },
-                'MAX_CONNECTIONS': 1000,
-                'RETRY_ON_TIMEOUT': True,
+                'KEY_PREFIX': 'miorai',
+                'TIMEOUT': 300,  # 5 minutes default timeout
             },
-            'KEY_PREFIX': 'miorai',
-            'TIMEOUT': 300,  # 5 minutes default timeout
-        },
-        'session': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/2'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'session': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/2'),
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                },
+                'KEY_PREFIX': 'session',
+                'TIMEOUT': 86400,  # 24 hours for sessions
             },
-            'KEY_PREFIX': 'session',
-            'TIMEOUT': 86400,  # 24 hours for sessions
-        },
-        'ml_predictions': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/3'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'KEY_PREFIX': 'ml_pred',
-            'TIMEOUT': 3600,  # 1 hour for ML predictions
+            'ml_predictions': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/3'),
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                },
+                'KEY_PREFIX': 'ml_pred',
+                'TIMEOUT': 3600,  # 1 hour for ML predictions
+            }
         }
-    }
-except ImportError:
-    # Fallback to default Django cache
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
-            'TIMEOUT': 300,
+    except (ImportError, redis.ConnectionError, Exception):
+        # Fallback to default Django cache
+        return {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'unique-snowflake',
+                'TIMEOUT': 300,
+            },
+            'session': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'session-cache',
+                'TIMEOUT': 86400,
+            },
+            'ml_predictions': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'ml-cache',
+                'TIMEOUT': 3600,
+            }
         }
+
+CACHES = get_cache_config()
+
+# Use Redis for session storage (with fallback)
+if 'session' in CACHES and CACHES['session']['BACKEND'] == 'django_redis.cache.RedisCache':
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'session'
+else:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# Cacheops configuration for database query caching (with fallback)
+if 'default' in CACHES and CACHES['default']['BACKEND'] == 'django_redis.cache.RedisCache':
+    CACHEOPS_REDIS = {
+        'host': os.environ.get('REDIS_HOST', '127.0.0.1'),
+        'port': int(os.environ.get('REDIS_PORT', 6379)),
+        'db': int(os.environ.get('REDIS_DB', 0)),
+        'socket_timeout': 3,
     }
 
-# Use Redis for session storage
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'session'
+    CACHEOPS_DEFAULTS = {
+        'timeout': 60 * 15,  # 15 minutes
+    }
 
-# Cacheops configuration for database query caching
-CACHEOPS_REDIS = {
-    'host': os.environ.get('REDIS_HOST', '127.0.0.1'),
-    'port': int(os.environ.get('REDIS_PORT', 6379)),
-    'db': int(os.environ.get('REDIS_DB', 0)),
-    'socket_timeout': 3,
-}
-
-CACHEOPS_DEFAULTS = {
-    'timeout': 60 * 15,  # 15 minutes
-}
-
-CACHEOPS = {
-    'tournaments.Tournament': {'ops': 'all', 'timeout': 60 * 30},  # 30 minutes
-    'tournaments.TournamentImage': {'ops': 'all', 'timeout': 60 * 30},
-    'tournaments.Match': {'ops': 'all', 'timeout': 60 * 10},  # 10 minutes
-    'users.User': {'ops': 'all', 'timeout': 60 * 60},  # 1 hour
-}
+    CACHEOPS = {
+        'tournaments.Tournament': {'ops': 'all', 'timeout': 60 * 30},  # 30 minutes
+        'tournaments.TournamentImage': {'ops': 'all', 'timeout': 60 * 30},
+        'tournaments.Match': {'ops': 'all', 'timeout': 60 * 10},  # 10 minutes
+        'users.User': {'ops': 'all', 'timeout': 60 * 60},  # 1 hour
+    }
+else:
+    # Disable cacheops if Redis is not available
+    CACHEOPS_DISABLED = True
 
 # Monitoring and Logging Configuration
 if DEBUG:

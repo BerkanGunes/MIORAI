@@ -55,7 +55,6 @@ class TournamentCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [TournamentSustainedThrottle]  # Turnuva oluşturma için sustained throttle
     
-    @monitor_api_performance
     def create(self, request, *args, **kwargs):
         try:
             response = super().create(request, *args, **kwargs)
@@ -82,7 +81,6 @@ class TournamentDetailView(generics.RetrieveAPIView, generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [TournamentSustainedThrottle]  # Turnuva detayları için sustained throttle
     
-    @monitor_api_performance
     def retrieve(self, request, *args, **kwargs):
         try:
             # Try to get from cache first
@@ -574,7 +572,6 @@ class PublicTournamentsListView(generics.ListAPIView):
     serializer_class = PublicTournamentSerializer
     permission_classes = [permissions.IsAuthenticated]
     
-    @monitor_api_performance
     def list(self, request, *args, **kwargs):
         try:
             # Get category filter from query params

@@ -37,7 +37,6 @@ class PredictMatchesView(APIView):
     """Eşleşme sayısı tahmini endpoint'i - Güven aralığı yaklaşımı"""
     permission_classes = [IsAuthenticated]
     
-    @monitor_api_performance
     def post(self, request):
         try:
             n_images = request.data.get('n_images')
@@ -135,7 +134,6 @@ class ModelStatusView(APIView):
     """ML model durumu endpoint'i"""
     permission_classes = [IsAuthenticated]
     
-    @monitor_api_performance
     def get(self, request):
         try:
             # Try to get from cache first
